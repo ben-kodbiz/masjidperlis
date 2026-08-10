@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tambah Masjid &amp; Jadual — Masjid Events Perlis</title>
+  <style>
+    :root {
+      --bg: #f4f6f8;
+      --card: #ffffff;
+      --ink: #1c2733;
+      --muted: #5b6b7a;
+      --accent: #0f6b3a;
+      --accent-ink: #ffffff;
+      --border: #d5dce3;
+      --error: #b3261e;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.5;
+    }
+    header { background: var(--accent); color: var(--accent-ink); padding: 16px 20px; }
+    header h1 { margin: 0; font-size: 1.25rem; }
+    main { max-width: 720px; margin: 24px auto; padding: 0 16px; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    h2 { font-size: 1.05rem; margin-top: 0; }
+    label { display: block; font-weight: 600; margin: 12px 0 4px; }
+    input, select, textarea {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font: inherit;
+      background: #fff;
+    }
+    .row { display: flex; gap: 12px; flex-wrap: wrap; }
+    .row > div { flex: 1 1 140px; }
+    .hint { color: var(--muted); font-size: 0.85rem; margin-top: 4px; }
+    button {
+      font: inherit;
+      font-weight: 600;
+      border: none;
+      border-radius: 6px;
+      padding: 10px 16px;
+      cursor: pointer;
+    }
+    .btn-primary { background: var(--accent); color: var(--accent-ink); }
+    .btn-ghost { background: #e6ecf1; color: var(--ink); }
+    .btn-danger { background: #fdecea; color: var(--danger); }
+    .event-item {
+      border: 1px dashed var(--border);
+      border-radius: 8px;
+      padding: 14px;
+      margin-bottom: 14px;
+      background: #fafcfd;
+    }
+    .event-item details { margin-top: 8px; }
+    #errors {
+      display: none;
+      background: #fdecea;
+      color: var(--danger);
+      border: 1px solid var(--danger);
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+    }
+    #errors.show { display: block; }
+    #result {
+      display: none;
+      background: #e7f6ee;
+      color: #0f4a2d;
+      border: 1px solid #2e9e6b;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 16px;
+    }
+    #result.show { display: block; }
+    fieldset { border: 1px solid var(--border); border-radius: 6px; margin-top: 10px; }
+    legend { font-weight: 600; padding: 0 6px; }
+    .days { display: flex; flex-wrap: wrap; gap: 8px; }
+    .days label { display: inline-flex; align-items: center; gap: 4px; font-weight: 400; margin: 0; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Tambah Masjid &amp; Jadual</h1>
+    <p style="margin:4px 0 0; font-size:0.9rem;">Alat tempatan (dev/admin). Data disimpan ke <code>data/masjids.json</code> dan <code>data/events.json</code>.</p>
+  </header>
+  <main>
+    <div id="errors" role="alert"></div>
+    <div id="result" role="status"></div>
+
+    <form id="masjid-form" novalidate>
+      <section class="card" aria-labelledby="h-masjid">
+        <h2 id="h-masjid">1. Maklumat Masjid</h2>
+        <label for="name">Nama masjid *</label>
+        <input id="name" name="name" type="text" required autocomplete="organization">
+        <label for="district">Daerah</label>
+        <input id="district" type="text" placeholder="cth. Kangar">
+        <label for="state">Negeri</label>
+        <input id="state" type="text" value="Perlis">
+        <label for="address">Alamat</label>
+        <textarea id="address" rows="2"></textarea>
+        <div class="row">
+          <div>
+            <label for="lat">Latitude</label>
+            <input id="lat" type="text" placeholder="e.g. 6.44">
+          </div>
+          <div>
+            <label for="lng">Longitude</label>
+            <input id="lng" type="text" placeholder="e.g. 100.20">
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label for="contact">Telefon / E-mel</label>
+            <input id="contact" type="text">
+          </div>
+          <div>
+            <label for="website">Laman web</label>
+            <input id="website" type="url" placeholder="https://">
+          </div>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="h-events">
+        <h2 id="h-events">2. Jadual / Acara</h2>
+        <div id="events"></div>
+        <button type="button" class="btn-ghost" id="add-event">+ Tambah acara</button>
+      </section>
+
+      <button type="submit" class="btn-primary" id="save" style="width:100%;">Simpan masjid &amp; jadual</button>
+    </form>
+  </main>
+
+  <script>
+(function () {
+  "use strict";
+
+  var CATEGORIES = [];
+  var WEEKDAYS = [
+    ["monday", "Isnin"], ["tuesday", "Selasa"], ["wednesday", "Rabu"],
+    ["thursday", "Khamis"], ["friday", "Jumaat"],
+    ["saturday", "Sabtu"], ["sunday", "Ahad"]
+  ];
+
+  function catOptions() {
+    return CATEGORIES.map(function (c) {
+      return '<option value="' + esc(c.id) + '">' + esc(c.name) + "</option>";
+    }).join("");
+  }
+
+  function esc(s) {
+    return String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function eventItemHTML() {
+    return (
+      '<div class="event-item">' +
+        '<label for="ev-title">Tajuk acara *</label>' +
+        '<input name="ev-title" type="text" class="ev-title" placeholder="e.g. Kuliyyah Maghrib">' +
+        '<div class="row">' +
+          '<div><label>Tarikh *</label><input name="ev-date" type="date" class="ev-date" required></div>' +
+          '<div><label>Mula (HH:MM) *</label><input name="ev-start" type="time" class="ev-start" required></div>' +
+          '<div><label>Tamat</label><input name="ev-end" type="time" class="ev-end"></div>' +
+        '</div>' +
+        '<div class="row">' +
+          '<div><label>Kategori</label><select name="ev-category" class="ev-category">' + catOptions() + "</select></div>" +
+          '<div><label>Penutur</label><input name="ev-speaker" type="text" class="ev-speaker" placeholder="e.g. Ustaz Ahmad"></div>' +
+          '<div>' +
+            '<label>Status</label>' +
+            '<select name="ev-status" class="ev-status">' +
+              '<option value="published">published</option>' +
+              '<option value="draft">draft</option>' +
+              '<option value="cancelled">cancelled</option>' +
+              '<option value="postponed">postponed</option>' +
+            "</select>" +
+          "</div>" +
+        "</div>" +
+        '<label for="ev-desc">Keterangan</label>' +
+        '<textarea name="ev-desc" class="ev-desc" rows="2"></textarea>' +
+        "<details><summary>Ulang mingguan (pilihan)</summary>" +
+          '<label>Hari dalam seminggu</label>' +
+          '<div class="days">' +
+            WEEKDAYS.map(function (d) {
+              return '<label><input type="checkbox" class="ev-rec-day" value="' + d[0] + '"> ' + d[1] + "</label>";
+            }).join("") +
+          "</div>" +
+          '<label for="ev-rec-end">Tarikh tamat (kosong = tiada tamat)</label>' +
+          '<input name="ev-rec-end" type="date" class="ev-rec-end">' +
+        "</details>" +
+        '<p style="margin:10px 0 0;"><button type="button" class="btn-danger ev-remove">Buang</button></p>' +
+      "</div>"
+    );
+  }
+
+  function addEventRow() {
+    var el = document.createElement("div");
+    el.innerHTML = eventItemHTML();
+    document.getElementById("events").appendChild(el.firstChild);
+  }
+
+  function showErrors(list) {
+    var box = document.getElementById("errors");
+    box.innerHTML = "<strong>Ralat:</strong><ul>" + list.map(function (e) { return "<li>" + esc(e) + "</li>"; }).join("") + "</ul>";
+    box.classList.add("show");
+  }
+
+  function clearStatus() {
+    document.getElementById("errors").classList.remove("show");
+    document.getElementById("result").classList.remove("show");
+  }
+
+  function collect() {
+    var val = function (id) {
+      var el = document.getElementById(id);
+      return el ? el.value.trim() : "";
+    };
+    var masjid = {
+      name: val("name"),
+      district: val("district"),
+      state: val("state") || "Perlis",
+      address: val("address"),
+      latitude: val("lat") || null,
+      longitude: val("lng") || null,
+      contact: val("contact"),
+      website: val("website")
+    };
+
+    var events = [];
+    document.querySelectorAll(".event-item").forEach(function (item) {
+      var recDays = [];
+      item.querySelectorAll(".ev-rec-day:checked").forEach(function (cb) {
+        recDays.push(cb.value);
+      });
+      var endDate = "";
+      var endEl = item.querySelector(".ev-rec-end");
+      if (endEl) endDate = endEl.value;
+      var recurrence = null;
+      if (recDays.length) {
+        recurrence = { type: "weekly", days: recDays, end_date: endDate || null };
+      }
+      events.push({
+        title: item.querySelector(".ev-title").value.trim(),
+        date: item.querySelector(".ev-date").value,
+        start_time: item.querySelector(".ev-start").value,
+        end_time: item.querySelector(".ev-end").value || null,
+        category: item.querySelector(".ev-category").value,
+        speaker: item.querySelector(".ev-speaker").value.trim() || null,
+        description: item.querySelector(".ev-desc").value.trim(),
+        status: item.querySelector(".ev-status").value,
+        recurrence: recurrence
+      });
+    });
+    return { masjid: masjid, events: events };
+  }
+
+  document.addEventListener("click", function (e) {
+    if (e.target && e.target.id === "add-event") addEventRow();
+    if (e.target && e.target.classList.contains("ev-remove")) {
+      e.target.closest(".event-item").remove();
+    }
+  });
+
+  document.getElementById("masjid-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    clearStatus();
+    var payload = collect();
+    if (!payload.masjid.name) { showErrors(["Nama masjid diperlukan."]); return; }
+    if (!payload.events.length) { showErrors(["Sekurang-kurangnya satu acara diperlukan."]); return; }
+    var btn = document.getElementById("save");
+    btn.disabled = true;
+    btn.textContent = "Menyimpan...";
+
+    fetch("/api/add-masjid", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    }).then(function (r) { return r.json().then(function (j) { return { ok: r.ok, json: j }; }); })
+      .then(function (res) {
+        btn.disabled = false;
+        btn.textContent = "Simpan masjid &amp; jadual";
+        if (!res.ok) {
+          showErrors(res.json.errors || [res.json.error || "Ralat tidak diketahui."]);
+          return;
+        }
+        var result = document.getElementById("result");
+        result.innerHTML = "Masjid <strong>" + esc(payload.masjid.name) + "</strong> disimpan. " +
+          "ID masjid: <code>" + esc(res.json.masjid_id) + "</code>, " +
+          res.json.event_count + " acara dicipta.";
+        result.classList.add("show");
+        document.getElementById("name").focus();
+      })
+      .catch(function (err) {
+        btn.disabled = false;
+        btn.textContent = "Simpan masjid &amp; jadual";
+        showErrors(["Gagal bersambung ke pelayan tempatan (" + esc(String(err)) + "). Pastikan alat dijalankan: python3 tools/serve.py"]);
+      });
+  });
+
+  fetch("/api/data")
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      CATEGORIES = data.categories || [];
+      addEventRow();
+    })
+    .catch(function () {
+      addEventRow();
+    });
+})();
+  </script>
+</body>
+</html>

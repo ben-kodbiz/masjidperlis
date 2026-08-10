@@ -1,0 +1,11 @@
+{
+  "site_name": "Masjid Events Perlis",
+  "site_url": "",
+  "language": "ms",
+  "timezone": "Asia/Kuala_Lumpur",
+  "date_format": "YYYY-MM-DD",
+  "time_format": "HH:MM",
+  "event_statuses": ["draft", "published", "cancelled", "postponed", "completed"],
+  "recurrence_types": ["weekly"],
+  "weekdays": ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+}

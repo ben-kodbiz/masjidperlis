@@ -1,0 +1,19 @@
+[
+  { "id": "kuliyyah", "name": "Kuliyyah" },
+  { "id": "ceramah", "name": "Ceramah" },
+  { "id": "tafsir", "name": "Tafsir" },
+  { "id": "hadith", "name": "Hadith" },
+  { "id": "fiqh", "name": "Fiqh" },
+  { "id": "akidah", "name": "Akidah" },
+  { "id": "sirah", "name": "Sirah" },
+  { "id": "tazkirah", "name": "Tazkirah" },
+  { "id": "khutbah", "name": "Khutbah" },
+  { "id": "program", "name": "Program" },
+  { "id": "seminar", "name": "Seminar" },
+  { "id": "youth", "name": "Youth" },
+  { "id": "children", "name": "Children" },
+  { "id": "women", "name": "Women" },
+  { "id": "ramadan", "name": "Ramadan" },
+  { "id": "community", "name": "Community" },
+  { "id": "other", "name": "Other" }
+]

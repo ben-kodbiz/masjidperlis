@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel Pengurusan — Masjid Events Perlis</title>
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body data-page="index">
+  <header class="admin-header">
+    <div class="inner">
+      <a class="brand" href="index.html">Panel Pengurusan<small>Masjid Events Perlis — alat tempatan</small></a>
+      <nav class="admin-nav" aria-label="Navigasi admin">
+        <ul>
+          <li><a href="index.html" data-page="index">Ringkasan</a></li>
+          <li><a href="events.html" data-page="events">Acara</a></li>
+          <li><a href="masjids.html" data-page="masjids">Masjid</a></li>
+          <li><a href="speakers.html" data-page="speakers">Penceramah</a></li>
+          <li><a href="categories.html" data-page="categories">Kategori</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <h1>Ringkasan</h1>
+    <div id="alert" class="alert" role="alert"></div>
+
+    <div class="stat-grid" id="stats">
+      <div class="stat"><div class="num" id="n-events">…</div><div class="lbl">Acara</div></div>
+      <div class="stat"><div class="num" id="n-masjids">…</div><div class="lbl">Masjid</div></div>
+      <div class="stat"><div class="num" id="n-speakers">…</div><div class="lbl">Penceramah</div></div>
+      <div class="stat"><div class="num" id="n-categories">…</div><div class="lbl">Kategori</div></div>
+    </div>
+
+    <section class="card" aria-label="Perubahan pantas">
+      <div class="card-head">
+        <h2>Tindakan pantas</h2>
+      </div>
+      <div class="button-row" style="padding: 12px 16px;">
+        <a class="btn" href="event-editor.html">+ Cipta acara</a>
+        <a class="btn btn-ghost" href="masjids.html">+ Masjid baru</a>
+        <a class="btn btn-ghost" href="speakers.html">+ Penceramah baru</a>
+        <a class="btn btn-ghost" href="categories.html">+ Kategori baru</a>
+        <a class="btn btn-ghost" href="add-masjid.html">Tambah masjid + jadual (borang lama)</a>
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="h-publish">
+      <div class="card-head">
+        <h2 id="h-publish">Sahkan &amp; Terbitkan</h2>
+      </div>
+      <div style="padding: 12px 16px;">
+        <p class="muted">Semak kesahihan data, kemudian salin ke <code>public/data/</code> untuk laman awam. Tiada terbitan automatik tanpa semakan dahulu.</p>
+        <button type="button" class="btn" id="btn-validate">Semak data</button>
+        <button type="button" class="btn btn-ghost" id="btn-publish">Terbitkan (salin ke public/data)</button>
+        <span id="publish-result" class="muted"></span>
+      </div>
+    </section>
+  </main>
+
+  <footer class="admin-footer">
+    <div class="inner">Alat pengurusan tempatan. Tidak sebahagian daripada laman awam. Data disimpan dalam <code>data/</code>.</div>
+  </footer>
+
+  <script src="admin.js"></script>
+  <script>
+    (function () {
+      "use strict";
+      var A = window.Admin;
+      var alertBox = document.getElementById("alert");
+
+      function show(kind, items) {
+        A.clearAlert(alertBox);
+        A.showAlert(alertBox, kind === "ok" ? "ok" : "err", items);
+      }
+
+      function renderCounts(data) {
+        document.getElementById("n-events").textContent = (data.events || []).length;
+        document.getElementById("n-masjids").textContent = (data.masjids || []).length;
+        document.getElementById("n-speakers").textContent = (data.speakers || []).length;
+        document.getElementById("n-categories").textContent = (data.categories || []).length;
+      }
+
+      A.loadData().then(function (data) {
+        renderCounts(data);
+      }).catch(function (err) {
+        show("err", ["Gagal memuat data: " + err.message +
+          " Pastikan jalankan: python3 tools/serve.py"]);
+      });
+
+      document.getElementById("btn-validate").addEventListener("click", function () {
+        var btn = this;
+        btn.disabled = true;
+        A.api("POST", "/api/validate").then(function (res) {
+          btn.disabled = false;
+          if (res.json.ok) {
+            show("ok", ["Semua data sah."]);
+          } else {
+            show("err", res.json.problems.length ? res.json.problems : ["Data tidak sah."]);
+          }
+        }).catch(function () {
+          btn.disabled = false;
+          show("err", ["Tiada sambungan ke pelayan tempatan."]);
+        });
+      });
+
+      document.getElementById("btn-publish").addEventListener("click", function () {
+        var btn = this, resEl = document.getElementById("publish-result");
+        if (!A.confirm("Terbitkan (salin data ke public/data)? Pastikan data sah dahulu.")) return;
+        btn.disabled = true;
+        resEl.textContent = "Menyemak...";
+        A.api("POST", "/api/publish").then(function (res) {
+          btn.disabled = false;
+          if (res.json.ok) {
+            resEl.textContent = "Data disalin ke public/data/.";
+            A.clearAlert(alertBox);
+            A.showAlert(alertBox, "ok", ["Diterbitkan."]);
+          } else {
+            resEl.textContent = "";
+            show("err", res.json.problems.length ? res.json.problems : ["Tidak dapat diterbitkan."]);
+          }
+        }).catch(function () {
+          btn.disabled = false;
+          resEl.textContent = "";
+          show("err", ["Tiada sambungan ke pelayan tempatan."]);
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

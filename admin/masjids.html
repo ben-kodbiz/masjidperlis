@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Masjid — Panel Pengurusan</title>
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body data-page="masjids">
+  <header class="admin-header">
+    <div class="inner">
+      <a class="brand" href="index.html">Panel Pengurusan<small>Masjid Events Perlis</small></a>
+      <nav class="admin-nav" aria-label="Navigasi admin">
+        <ul>
+          <li><a href="index.html" data-page="index">Ringkasan</a></li>
+          <li><a href="events.html" data-page="events">Acara</a></li>
+          <li><a href="masjids.html" data-page="masjids">Masjid</a></li>
+          <li><a href="speakers.html" data-page="speakers">Penceramah</a></li>
+          <li><a href="categories.html" data-page="categories">Kategori</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+      <h1>Masjid</h1>
+      <div class="button-row" style="margin:0;">
+        <button type="button" class="btn" id="btn-new">+ Masjid baru</button>
+        <a class="btn btn-ghost" href="add-masjid.html">Borang lama: masjid + jadual</a>
+      </div>
+    </div>
+    <div id="alert" class="alert" role="alert"></div>
+
+    <section id="list-panel" class="card">
+      <div class="table-scroll">
+        <table aria-label="Senarai masjid">
+          <thead>
+            <tr>
+              <th>Nama</th>
+              <th>Daerah</th>
+              <th>Alamat</th>
+              <th>Kenalan</th>
+              <th>Acara</th>
+              <th>Tindakan</th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+      <p id="empty" class="muted" hidden style="padding: 12px 16px;">Tiada masjid.</p>
+    </section>
+
+    <section id="edit-panel" class="card" hidden>
+      <div class="card-head">
+        <h2 id="edit-title">Masjid baru</h2>
+      </div>
+      <form id="editor" style="padding: 16px;" novalidate>
+        <div class="form-grid cols-2">
+          <div class="field">
+            <label for="name">Nama *</label>
+            <input id="name" name="name" required maxlength="200">
+          </div>
+          <div class="field">
+            <label for="district">Daerah</label>
+            <input id="district" name="district">
+          </div>
+          <div class="field">
+            <label for="state">Negeri</label>
+            <input id="state" name="state" value="Perlis">
+          </div>
+          <div class="field">
+            <label for="website">Laman web</label>
+            <input id="website" name="website" placeholder="https://…">
+          </div>
+          <div class="field">
+            <label for="latitude">Latitud</label>
+            <input id="latitude" name="latitude" type="number" step="any" inputmode="decimal">
+          </div>
+          <div class="field">
+            <label for="longitude">Longitud</label>
+            <input id="longitude" name="longitude" type="number" step="any" inputmode="decimal">
+          </div>
+        </div>
+        <div class="field">
+          <label for="address">Alamat</label>
+          <textarea id="address" name="address" rows="2"></textarea>
+        </div>
+        <div class="field">
+          <label for="contact">Kenalan</label>
+          <input id="contact" name="contact">
+        </div>
+        <div class="button-row">
+          <button type="submit" class="btn" id="btn-save">Simpan</button>
+          <button type="button" class="btn btn-ghost" id="btn-cancel">Batal</button>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <script src="admin.js"></script>
+  <script>
+    (function () {
+      "use strict";
+      var A = window.Admin;
+      var alertBox = document.getElementById("alert");
+      var editId = "";
+
+      function err(items) { A.clearAlert(alertBox); A.showAlert(alertBox, "err", items); }
+      function ok(msg) { A.clearAlert(alertBox); A.showAlert(alertBox, "ok", msg); }
+
+      function render(d) {
+        document.getElementById("rows").innerHTML = d.masjids.map(function (m) {
+          var count = d.events.filter(function (e) { return e.masjid_id === m.id; }).length;
+          return "<tr>" +
+            "<td><strong>" + A.esc(m.name) + "</strong></td>" +
+            "<td>" + A.esc(m.district || "—") + "</td>" +
+            "<td>" + A.esc(m.address || "—") + "</td>" +
+            "<td>" + A.esc(m.contact || "—") + "</td>" +
+            "<td>" + count + "</td>" +
+            '<td><button type="button" class="btn btn-ghost btn-sm" data-act="edit" data-id="' + m.id + '">Edit</button>' +
+            '<button type="button" class="btn btn-danger btn-sm" data-act="delete" data-id="' + m.id + '">Padam</button></td>' +
+          "</tr>";
+        }).join("");
+        document.getElementById("empty").hidden = d.masjids.length > 0;
+      }
+
+      function load() {
+        A.loadData().then(function (d) { render(d); }).catch(function (e) {
+          err(["Gagal memuat data: " + e.message]);
+        });
+      }
+
+      function showForm(m) {
+        editId = m ? m.id : "";
+        document.getElementById("edit-title").textContent = m ? "Sunting — " + m.name : "Masjid baru";
+        document.getElementById("name").value = m ? m.name : "";
+        document.getElementById("district").value = m ? m.district || "" : "";
+        document.getElementById("state").value = m ? m.state || "Perlis" : "Perlis";
+        document.getElementById("address").value = m ? m.address || "" : "";
+        document.getElementById("latitude").value = m && m.latitude != null ? m.latitude : "";
+        document.getElementById("longitude").value = m && m.longitude != null ? m.longitude : "";
+        document.getElementById("contact").value = m ? m.contact || "" : "";
+        document.getElementById("website").value = m ? m.website || "" : "";
+        document.getElementById("list-panel").hidden = true;
+        document.getElementById("edit-panel").hidden = false;
+        document.getElementById("edit-panel").scrollIntoView({ block: "start" });
+      }
+
+      document.getElementById("btn-new").addEventListener("click", function () { showForm(null); });
+      document.getElementById("btn-cancel").addEventListener("click", function () {
+        editId = "";
+        document.getElementById("edit-panel").hidden = true;
+        document.getElementById("list-panel").hidden = false;
+      });
+
+      document.getElementById("rows").addEventListener("click", function (ev) {
+        var btn = ev.target.closest("button[data-act]");
+        if (!btn) return;
+        var act = btn.dataset.act, id = btn.dataset.id;
+        if (act === "edit") {
+          A.loadData().then(function (d) {
+            var m = d.masjids.find(function (x) { return x.id === id; });
+            if (m) showForm(m); else err(["Masjid tidak dijumpai."]);
+          });
+        } else if (act === "delete") {
+          if (!A.confirm("Padamkan masjid ini?")) return;
+          A.api("DELETE", "/api/masjids/" + id).then(function (res) {
+            if (!res.ok) { err(res.json.errors || ["Tidak dapat dipadam."]); return; }
+            load();
+          }).catch(function () { err(["Tiada sambungan ke pelayan tempatan."]); });
+        }
+      });
+
+      document.getElementById("editor").addEventListener("submit", function (ev) {
+        ev.preventDefault();
+        var payload = {
+          name: document.getElementById("name").value,
+          district: document.getElementById("district").value,
+          state: document.getElementById("state").value,
+          address: document.getElementById("address").value,
+          latitude: document.getElementById("latitude").value || null,
+          longitude: document.getElementById("longitude").value || null,
+          contact: document.getElementById("contact").value,
+          website: document.getElementById("website").value
+        };
+        var p = editId ? A.api("PUT", "/api/masjids/" + editId, payload)
+                       : A.api("POST", "/api/masjids", payload);
+        p.then(function (res) {
+          if (!res.ok) { err(res.json.errors || ["Tidak dapat disimpan."]); return; }
+          ok(editId ? "Masjid dikemas kini." : "Masjid dicipta. ID: " + res.json.id);
+          editId = "";
+          document.getElementById("edit-panel").hidden = true;
+          document.getElementById("list-panel").hidden = false;
+          load();
+        }).catch(function () { err(["Tiada sambungan ke pelayan tempatan."]); });
+      });
+
+      load();
+    })();
+  </script>
+</body>
+</html>

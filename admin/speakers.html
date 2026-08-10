@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Penceramah — Panel Pengurusan</title>
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body data-page="speakers">
+  <header class="admin-header">
+    <div class="inner">
+      <a class="brand" href="index.html">Panel Pengurusan<small>Masjid Events Perlis</small></a>
+      <nav class="admin-nav" aria-label="Navigasi admin">
+        <ul>
+          <li><a href="index.html" data-page="index">Ringkasan</a></li>
+          <li><a href="events.html" data-page="events">Acara</a></li>
+          <li><a href="masjids.html" data-page="masjids">Masjid</a></li>
+          <li><a href="speakers.html" data-page="speakers">Penceramah</a></li>
+          <li><a href="categories.html" data-page="categories">Kategori</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+      <h1>Penceramah</h1>
+      <button type="button" class="btn" id="btn-new">+ Penceramah baru</button>
+    </div>
+    <div id="alert" class="alert" role="alert"></div>
+
+    <section id="list-panel" class="card">
+      <div class="table-scroll">
+        <table aria-label="Senarai penceramah">
+          <thead>
+            <tr>
+              <th>Nama</th>
+              <th>Penerangan</th>
+              <th>Acara</th>
+              <th>Tindakan</th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+      <p id="empty" class="muted" hidden style="padding: 12px 16px;">Tiada penceramah.</p>
+    </section>
+
+    <section id="edit-panel" class="card" hidden>
+      <div class="card-head">
+        <h2 id="edit-title">Penceramah baru</h2>
+      </div>
+      <form id="editor" style="padding: 16px;" novalidate>
+        <div class="field">
+          <label for="name">Nama *</label>
+          <input id="name" name="name" required>
+        </div>
+        <div class="field">
+          <label for="description">Penerangan</label>
+          <textarea id="description" name="description" rows="3"></textarea>
+        </div>
+        <div class="button-row">
+          <button type="submit" class="btn">Simpan</button>
+          <button type="button" class="btn btn-ghost" id="btn-cancel">Batal</button>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <script src="admin.js"></script>
+  <script>
+    (function () {
+      "use strict";
+      var A = window.Admin;
+      var alertBox = document.getElementById("alert");
+      var editId = "";
+
+      function err(items) { A.clearAlert(alertBox); A.showAlert(alertBox, "err", items); }
+      function ok(msg) { A.clearAlert(alertBox); A.showAlert(alertBox, "ok", msg); }
+
+      function render(d) {
+        document.getElementById("rows").innerHTML = d.speakers.map(function (s) {
+          var count = d.events.filter(function (e) { return e.speaker_id === s.id; }).length;
+          return "<tr>" +
+            "<td><strong>" + A.esc(s.name) + "</strong></td>" +
+            "<td>" + A.esc(s.description || "—") + "</td>" +
+            "<td>" + count + "</td>" +
+            '<td><button type="button" class="btn btn-ghost btn-sm" data-act="edit" data-id="' + s.id + '">Edit</button>' +
+            '<button type="button" class="btn btn-danger btn-sm" data-act="delete" data-id="' + s.id + '">Padam</button></td>' +
+          "</tr>";
+        }).join("");
+        document.getElementById("empty").hidden = d.speakers.length > 0;
+      }
+
+      function load() {
+        A.loadData().then(function (d) { render(d); }).catch(function (e) {
+          err(["Gagal memuat data: " + e.message]);
+        });
+      }
+
+      function showForm(s) {
+        editId = s ? s.id : "";
+        document.getElementById("edit-title").textContent = s ? "Sunting — " + s.name : "Penceramah baru";
+        document.getElementById("name").value = s ? s.name : "";
+        document.getElementById("description").value = s ? s.description || "" : "";
+        document.getElementById("list-panel").hidden = true;
+        document.getElementById("edit-panel").hidden = false;
+      }
+
+      document.getElementById("btn-new").addEventListener("click", function () { showForm(null); });
+      document.getElementById("btn-cancel").addEventListener("click", function () {
+        editId = "";
+        document.getElementById("edit-panel").hidden = true;
+        document.getElementById("list-panel").hidden = false;
+      });
+
+      document.getElementById("rows").addEventListener("click", function (ev) {
+        var btn = ev.target.closest("button[data-act]");
+        if (!btn) return;
+        var act = btn.dataset.act, id = btn.dataset.id;
+        if (act === "edit") {
+          A.loadData().then(function (d) {
+            var s = d.speakers.find(function (x) { return x.id === id; });
+            if (s) showForm(s); else err(["Penceramah tidak dijumpai."]);
+          });
+        } else if (act === "delete") {
+          if (!A.confirm("Padamkan penceramah ini?")) return;
+          A.api("DELETE", "/api/speakers/" + id).then(function (res) {
+            if (!res.ok) { err(res.json.errors || ["Tidak dapat dipadam."]); return; }
+            load();
+          }).catch(function () { err(["Tiada sambungan ke pelayan tempatan."]); });
+        }
+      });
+
+      document.getElementById("editor").addEventListener("submit", function (ev) {
+        ev.preventDefault();
+        var payload = {
+          name: document.getElementById("name").value,
+          description: document.getElementById("description").value
+        };
+        var p = editId ? A.api("PUT", "/api/speakers/" + editId, payload)
+                       : A.api("POST", "/api/speakers", payload);
+        p.then(function (res) {
+          if (!res.ok) { err(res.json.errors || ["Tidak dapat disimpan."]); return; }
+          ok(editId ? "Penceramah dikemas kini." : "Penceramah dicipta.");
+          editId = "";
+          document.getElementById("edit-panel").hidden = true;
+          document.getElementById("list-panel").hidden = false;
+          load();
+        }).catch(function () { err(["Tiada sambungan ke pelayan tempatan."]); });
+      });
+
+      load();
+    })();
+  </script>
+</body>
+</html>

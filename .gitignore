@@ -1,0 +1,39 @@
+# General
+.DS_Store
+Thumbs.db
+*.swp
+*~
+*.log
+
+# Secrets — never commit
+*.pem
+*.key
+*.pgp
+*.gpg
+*.env
+.env.*
+service-account*.json
+credentials*.json
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+build/
+dist/
+
+# Node (only if a JS build ever becomes necessary)
+node_modules/
+package-lock.json
+
+# Editors
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln

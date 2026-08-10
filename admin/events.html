@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Acara — Panel Pengurusan</title>
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body data-page="events">
+  <header class="admin-header">
+    <div class="inner">
+      <a class="brand" href="index.html">Panel Pengurusan<small>Masjid Events Perlis</small></a>
+      <nav class="admin-nav" aria-label="Navigasi admin">
+        <ul>
+          <li><a href="index.html" data-page="index">Ringkasan</a></li>
+          <li><a href="events.html" data-page="events">Acara</a></li>
+          <li><a href="masjids.html" data-page="masjids">Masjid</a></li>
+          <li><a href="speakers.html" data-page="speakers">Penceramah</a></li>
+          <li><a href="categories.html" data-page="categories">Kategori</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+      <h1>Acara</h1>
+      <a class="btn" href="event-editor.html">+ Cipta acara</a>
+    </div>
+    <div id="alert" class="alert" role="alert"></div>
+
+    <div class="toolbar" aria-label="Tapis acara">
+      <select id="f-status" aria-label="Tapis status"></select>
+      <select id="f-masjid" aria-label="Tapis masjid"></select>
+      <select id="f-category" aria-label="Tapis kategori"></select>
+      <input type="search" id="f-q" placeholder="Cari tajuk / penceramah…" aria-label="Cari">
+      <button type="button" class="btn btn-ghost" id="f-clear">Set semula</button>
+    </div>
+
+    <section class="card">
+      <div class="table-scroll">
+        <table aria-label="Senarai acara">
+          <thead>
+            <tr>
+              <th>Status</th>
+              <th>Tajuk</th>
+              <th>Tarikh / Masa</th>
+              <th>Masjid</th>
+              <th>Kategori</th>
+              <th>Penceramah</th>
+              <th>Tindakan</th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+      <p id="empty" class="muted" hidden style="padding: 12px 16px;">Tiada acara.</p>
+    </section>
+  </main>
+
+  <script src="admin.js"></script>
+  <script>
+    (function () {
+      "use strict";
+      var A = window.Admin;
+      var alertBox = document.getElementById("alert");
+      var fStatus = document.getElementById("f-status"),
+          fMasjid = document.getElementById("f-masjid"),
+          fCategory = document.getElementById("f-category"),
+          fQ = document.getElementById("f-q");
+      var state = { all: null, status: "", masjid: "", category: "", q: "" };
+
+      function showErr(items) {
+        A.clearAlert(alertBox);
+        A.showAlert(alertBox, "err", items);
+      }
+
+      function fillSelectorAsync() {
+        A.loadData().then(function (d) {
+          state.all = d;
+          propSelect(fStatus, "Semua status", [["draft","Draft"],["published","Tersiar"],["cancelled","Dibatalkan"],["postponed","Ditunda"],["completed","Arkib"]], "status");
+          propSelect(fMasjid, "Semua masjid", (d.masjids||[]).map(function (m) { return [m.id, m.name]; }), "masjid");
+          propSelect(fCategory, "Semua kategori", (d.categories||[]).map(function (c) { return [c.id, c.name]; }), "category");
+          render();
+        }).catch(function (err) {
+          showErr(["Gagal memuat data: " + err.message]);
+        });
+      }
+
+      function propSelect(el, label, pairs, prop) {
+        el.innerHTML = '<option value="">' + A.esc(label) + "</option>" +
+          pairs.map(function (p) { return '<option value="' + p[0] + '">' + A.esc(p[1]) + "</option>"; }).join("");
+        el.addEventListener("change", function () {
+          state[prop] = el.value;
+          render();
+        });
+      }
+
+      function matches(e) {
+        var masjidName = ((index(state.all.masjids, e.masjid_id)||{}).name || "").toLowerCase();
+        var speakerName = ((index(state.all.speakers, e.speaker_id)||{}).name || e.speaker_id || "").toLowerCase();
+        var q = state.q.toLowerCase();
+        return (!state.status || e.status === state.status) &&
+               (!state.masjid || e.masjid_id === state.masjid) &&
+               (!state.category || e.category_id === state.category) &&
+               (!q || (e.title||"").toLowerCase().indexOf(q) >= 0 ||
+                      speakerName.indexOf(q) >= 0 || masjidName.indexOf(q) >= 0);
+      }
+
+      function index(coll, id) {
+        var i = 0;
+        for (; i < (coll||[]).length; i++) if (coll[i].id === id) return coll[i];
+        return null;
+      }
+
+      function render() {
+        var d = state.all;
+        if (!d) return;
+        var rows = (d.events||[]).slice().sort(function (a, b) {
+          return a.date === b.date ? (a.start_time||"").localeCompare(b.start_time||"") : b.date.localeCompare(a.date);
+        }).filter(matches);
+        var m = d.masjids, c = d.categories, s = d.speakers, name = index;
+        document.getElementById("rows").innerHTML = rows.map(function (e) {
+          var masjid = name(m, e.masjid_id);
+          var cat = name(c, e.category_id);
+          var spk = name(s, e.speaker_id);
+          var canPublish = e.status !== "published";
+          var buttons = "";
+          buttons += '<a class="btn btn-ghost btn-sm" href="event-editor.html?id=' + e.id + '">Edit</a>';
+          if (canPublish) buttons += '<button type="button" class="btn btn-sm" data-act="publish" data-id="' + e.id + '">Terbit</button>';
+          if (e.status === "published" || e.status === "draft") {
+            buttons += '<button type="button" class="btn btn-ghost btn-sm" data-act="postpone" data-id="' + e.id + '">Tunda</button>';
+            buttons += '<button type="button" class="btn btn-ghost btn-sm" data-act="cancel" data-id="' + e.id + '">Batal</button>';
+          }
+          buttons += '<button type="button" class="btn btn-ghost btn-sm" data-act="complete" data-id="' + e.id + '">Arkib</button>';
+          buttons += '<button type="button" class="btn btn-danger btn-sm" data-act="delete" data-id="' + e.id + '">Padam</button>';
+          return "<tr>" +
+            "<td>" + A.badge(e.status) + "</td>" +
+            "<td><strong>" + A.esc(e.title) + "</strong>" + (e.recurrence ? '<div class="muted" style="font-size:.8rem">berulang mingguan</div>' : "") + "</td>" +
+            "<td>" + A.fmtDate(e.date) + "<br><span class=\"muted\">" + A.esc(e.start_time) + (e.end_time ? "–" + A.esc(e.end_time) : "") + "</span></td>" +
+            "<td>" + (masjid ? A.esc(masjid.name) : A.esc(e.masjid_id)) + "</td>" +
+            "<td>" + (cat ? A.esc(cat.name) : "—") + "</td>" +
+            "<td>" + (spk ? A.esc(spk.name) : "—") + "</td>" +
+            "<td style=\"white-space:nowrap\">" + buttons + "</td>" +
+          "</tr>";
+        }).join("");
+        document.getElementById("empty").hidden = rows.length > 0;
+      }
+
+      fQ.addEventListener("input", function () { state.q = fQ.value; render(); });
+      document.getElementById("f-clear").addEventListener("click", function () {
+        state.status = state.masjid = state.category = state.q = "";
+        fStatus.value = fMasjid.value = fCategory.value = fQ.value = "";
+        render();
+      });
+
+      document.getElementById("rows").addEventListener("click", function (ev) {
+        var btn = ev.target.closest("button[data-act]");
+        if (!btn) return;
+        var id = btn.dataset.id, act = btn.dataset.act;
+        var label = { publish: "Terbitkan", postpone: "Tunda", cancel: "Batalkan", complete: "Arkibkan (selesai)", delete: "Padamkan" }[act];
+        if (!A.confirm(label + " acara ini?")) return;
+        var p;
+        if (act === "delete") p = A.api("DELETE", "/api/events/" + id);
+        else if (act === "publish") p = A.api("POST", "/api/events/" + id + "/status", { status: "published" });
+        else if (act === "postpone") p = A.api("POST", "/api/events/" + id + "/status", { status: "postponed" });
+        else if (act === "cancel") p = A.api("POST", "/api/events/" + id + "/status", { status: "cancelled" });
+        else if (act === "complete") p = A.api("POST", "/api/events/" + id + "/status", { status: "completed" });
+        p.then(function (res) {
+          if (!res.ok) { showErr(res.json.errors || ["Gagal."]); return; }
+          return A.loadData().then(function (d) { state.all = d; render(); });
+        }).catch(function () { showErr(["Tiada sambungan ke pelayan tempatan."]); });
+      });
+
+      fillSelectorAsync();
+    })();
+  </script>
+</body>
+</html>

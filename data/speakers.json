@@ -1,0 +1,17 @@
+[
+  {
+    "id": "speaker-ahmad",
+    "name": "Ustaz Ahmad Firdaus",
+    "description": "Imam Masjid Alwi, Kangar"
+  },
+  {
+    "id": "speaker-siti",
+    "name": "Ustazah Siti Hajar",
+    "description": "Guru tadika Al-Quran, Arau"
+  },
+  {
+    "id": "speaker-hafiz",
+    "name": "Dr. Hafiz Rahman",
+    "description": "Pensyarah, Universiti Malaysia Perlis"
+  }
+]

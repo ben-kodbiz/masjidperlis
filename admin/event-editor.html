@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cipta / Sunting Acara — Panel Pengurusan</title>
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body data-page="events">
+  <header class="admin-header">
+    <div class="inner">
+      <a class="brand" href="index.html">Panel Pengurusan<small>Masjid Events Perlis</small></a>
+      <nav class="admin-nav" aria-label="Navigasi admin">
+        <ul>
+          <li><a href="index.html" data-page="index">Ringkasan</a></li>
+          <li><a href="events.html" data-page="events">Acara</a></li>
+          <li><a href="masjids.html" data-page="masjids">Masjid</a></li>
+          <li><a href="speakers.html" data-page="speakers">Penceramah</a></li>
+          <li><a href="categories.html" data-page="categories">Kategori</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <h1 id="page-title">Cipta acara</h1>
+    <div id="alert" class="alert" role="alert"></div>
+
+    <form id="editor" novalidate>
+      <section class="card" style="padding: 16px;">
+        <div class="form-grid cols-2">
+          <div class="field">
+            <label for="title">Tajuk *</label>
+            <input id="title" name="title" required maxlength="300">
+          </div>
+          <div class="field">
+            <label for="masjid_id">Masjid *</label>
+            <select id="masjid_id" name="masjid_id" required></select>
+          </div>
+          <div class="field">
+            <label for="date">Tarikh *</label>
+            <input id="date" name="date" type="date" required>
+          </div>
+          <div class="field">
+            <label for="status">Status</label>
+            <select id="status" name="status">
+              <option value="draft">Draft</option>
+              <option value="published">Tersiar</option>
+              <option value="cancelled">Dibatalkan</option>
+              <option value="postponed">Ditunda</option>
+              <option value="completed">Arkib</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="start_time">Masa mula *</label>
+            <input id="start_time" name="start_time" type="time" required>
+          </div>
+          <div class="field">
+            <label for="end_time">Masa tamat</label>
+            <input id="end_time" name="end_time" type="time">
+          </div>
+          <div class="field">
+            <label for="speaker_id">Penceramah</label>
+            <select id="speaker_id" name="speaker_id">
+              <option value="">— Tiada —</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="category_id">Kategori</label>
+            <select id="category_id" name="category_id">
+              <option value="">— Tiada —</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="location">Lokasi</label>
+          <input id="location" name="location">
+          <div class="hint">Kosongkan untuk menggunakan nama masjid.</div>
+        </div>
+        <div class="field">
+          <label for="description">Penerangan</label>
+          <textarea id="description" name="description" rows="5"></textarea>
+        </div>
+      </section>
+
+      <section class="card" style="padding: 16px;">
+        <h2 style="margin-top:0;">Pengulangan mingguan</h2>
+        <label class="hint" for="weekly">
+          <input type="checkbox" id="weekly"> Acara ini berulang setiap minggu
+        </label>
+        <div id="recur-panel" hidden>
+          <div class="field">
+            <label>Hari (minggu ini sahaja; ulangan = setiap minggu)</label>
+            <div class="days" id="r-days"></div>
+          </div>
+          <div class="form-grid cols-2">
+            <div class="field">
+              <label for="r-start">Mula</label>
+              <input id="r-start" type="date">
+            </div>
+            <div class="field">
+              <label for="r-end">Tamat (kosong = tanpa had)</label>
+              <input id="r-end" type="date">
+            </div>
+          </div>
+          <div class="field">
+            <label for="r-exceptions">Hari dikecualikan (tarikh)</label>
+            <textarea id="r-exceptions" rows="2" placeholder="cth. 2026-08-27, 2026-09-03"></textarea>
+            <div class="hint">Format: YYYY-MM-DD, dipisah dengan koma.</div>
+          </div>
+        </div>
+      </section>
+
+      <div class="button-row">
+        <button type="submit" class="btn" id="btn-save">Simpan</button>
+        <button type="button" class="btn btn-ghost" id="btn-preview">Papar semakan</button>
+        <a class="btn btn-ghost" href="events.html">Batal</a>
+      </div>
+    </form>
+
+    <div class="card preview-pane" id="preview-pane" hidden>
+      <div class="card-head">
+        <h2 id="preview-title">Semakan</h2>
+      </div>
+      <iframe id="preview-frame" title="Semakan paparan awam"></iframe>
+    </div>
+  </main>
+
+  <script src="admin.js"></script>
+  <script>
+    (function () {
+      "use strict";
+      var A = window.Admin;
+      var alertBox = document.getElementById("alert");
+      var editId = new URLSearchParams(location.search).get("id") || "";
+      var formEl = document.getElementById("editor");
+
+      var DAYS = [
+        ["monday", "Isnin"], ["tuesday", "Selasa"], ["wednesday", "Rabu"],
+        ["thursday", "Khamis"], ["friday", "Jumaat"], ["saturday", "Sabtu"],
+        ["sunday", "Ahad"]
+      ];
+      document.getElementById("r-days").innerHTML = DAYS.map(function (d) {
+        return '<label><input type="checkbox" value="' + d[0] + '"> ' + d[1] + "</label>";
+      }).join("");
+
+      function err(items) { A.clearAlert(alertBox); A.showAlert(alertBox, "err", items); }
+      function ok(msg) { A.clearAlert(alertBox); A.showAlert(alertBox, "ok", msg); }
+
+      function fillSelect(id, list, value) {
+        var el = document.getElementById(id);
+        el.innerHTML = list.map(function (r) {
+          return '<option value="' + r.id + '"' + (r.id === value ? " selected" : "") + ">" + A.esc(r.name) + "</option>";
+        }).join("");
+      }
+
+      function loadRecord(data) {
+        if (!editId) {
+          fillSelect("masjid_id", data.masjids, data.masjids.length ? data.masjids[0].id : "");
+          fillSelect("speaker_id", data.speakers, "");
+          fillSelect("category_id", data.categories, "");
+          document.getElementById("date").value = A.today();
+          document.getElementById("start_time").value = "20:00";
+          return;
+        }
+        var ev = data.events.find(function (e) { return e.id === editId; });
+        if (!ev) { err(["Acara tidak dijumpai: " + editId]); return; }
+        document.getElementById("page-title").textContent = "Sunting acara — " + ev.title;
+        document.getElementById("title").value = ev.title || "";
+        document.getElementById("date").value = ev.date || "";
+        document.getElementById("start_time").value = ev.start_time || "";
+        document.getElementById("end_time").value = ev.end_time || "";
+        fillSelect("masjid_id", data.masjids, ev.masjid_id);
+        fillSelect("speaker_id", data.speakers, ev.speaker_id || "");
+        fillSelect("category_id", data.categories, ev.category_id || "");
+        document.getElementById("status").value = ev.status || "draft";
+        document.getElementById("location").value = ev.location || "";
+        document.getElementById("description").value = ev.description || "";
+        if (ev.recurrence) {
+          document.getElementById("weekly").checked = true;
+          showRecur(true);
+          document.getElementById("r-days").querySelectorAll("input").forEach(function (cb) {
+            cb.checked = (ev.recurrence.days || []).indexOf(cb.value) >= 0;
+          });
+          document.getElementById("r-start").value = ev.recurrence.start_date || "";
+          document.getElementById("r-end").value = ev.recurrence.end_date || "";
+          document.getElementById("r-exceptions").value = (ev.recurrence.exceptions || []).join(", ");
+        }
+      }
+
+      function showRecur(on) {
+        document.getElementById("recur-panel").hidden = !on;
+        document.getElementById("date").required = !on;
+      }
+      document.getElementById("weekly").addEventListener("change", function (e) {
+        showRecur(e.target.checked);
+      });
+
+      function collect() {
+        var days = [];
+        document.getElementById("r-days").querySelectorAll("input:checked").forEach(function (cb) { days.push(cb.value); });
+        var exceptions = document.getElementById("r-exceptions").value.split(",")
+          .map(function (s) { return s.trim(); }).filter(Boolean);
+        var rec = null;
+        if (document.getElementById("weekly").checked) {
+          rec = {
+            type: "weekly",
+            days: days,
+            start_date: document.getElementById("r-start").value || document.getElementById("date").value || null,
+            end_date: document.getElementById("r-end").value || null,
+            exceptions: exceptions
+          };
+        }
+        return {
+          title: document.getElementById("title").value,
+          masjid_id: document.getElementById("masjid_id").value,
+          date: document.getElementById("date").value,
+          start_time: document.getElementById("start_time").value,
+          end_time: document.getElementById("end_time").value || null,
+          speaker_id: document.getElementById("speaker_id").value || null,
+          category_id: document.getElementById("category_id").value || null,
+          status: document.getElementById("status").value,
+          location: document.getElementById("location").value || null,
+          description: document.getElementById("description").value,
+          recurrence: rec
+        };
+      }
+
+      formEl.addEventListener("submit", function (ev) {
+        ev.preventDefault();
+        var payload = collect();
+        var p = editId ? A.api("PUT", "/api/events/" + editId, payload)
+                       : A.api("POST", "/api/events", payload);
+        p.then(function (res) {
+          if (!res.ok) { err(res.json.errors || ["Tidak dapat disimpan."]); return; }
+          ok("Disimpan. ID: " + res.json.id);
+          if (!editId) {
+            history.replaceState(null, "", "event-editor.html?id=" + res.json.id);
+            document.getElementById("page-title").textContent = "Sunting acara — " + payload.title;
+            editId = res.json.id;
+          }
+        }).catch(function () { err(["Tiada sambungan ke pelayan tempatan."]); });
+      });
+
+      document.getElementById("btn-preview").addEventListener("click", function () {
+        if (!editId) {
+          err(["Simpan acara dahulu sebelum paparan semakan."]);
+          return;
+        }
+        A.api("POST", "/api/preview", { type: "event", id: editId }).then(function (res) {
+          if (!res.ok) { err(res.json.errors || ["Tidak dapat membuat semakan."]); return; }
+          document.getElementById("preview-title").textContent = "Semakan — " + res.json.title;
+          document.getElementById("preview-frame").srcdoc = res.json.html;
+          document.getElementById("preview-pane").hidden = false;
+          document.getElementById("preview-pane").scrollIntoView({ behavior: "smooth", block: "start" });
+        }).catch(function () { err(["Tiada sambungan ke pelayan tempatan."]); });
+      });
+
+      A.loadData().then(loadRecord).catch(function (e) {
+        err(["Gagal memuat data: " + e.message]);
+      });
+    })();
+  </script>
+</body>
+</html>
