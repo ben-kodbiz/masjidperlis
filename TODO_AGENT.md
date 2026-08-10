@@ -353,6 +353,15 @@ Workflows: `validate.yml` and `deploy.yml`. Validation on pull request, push to 
 
 Introduce organization/ownership concept (State -> District -> Masjid -> Editors -> Events). Establish data model first; do not implement complex multi-tenant auth until there is a real requirement.
 
+### Acceptance
+- [x] Districts modelled as a collection (`data/districts.json`) with stable ids.
+- [x] Editors collection (`data/editors.json`) representing local admins (metadata only, no auth).
+- [x] Masjids linked to districts via required `district_id` and optional `editor_id` (validated).
+- [x] Admin tool CRUD for districts/editors; delete blocked while referenced by masjids.
+- [x] Validator enforces district/editor references and district-name consistency.
+- [x] Sheet importer derives `district_id` from the free-text district.
+- [x] Docs, tests and the `public/data` mirror updated.
+
 ---
 
 # 21. Stage 17 — Federation / Multiple Data Sources
@@ -1180,4 +1189,56 @@ Files changed:
 Known issues:
   - None.
 Next stage: Stage 16 — Multi-Masjid Administration.
+```
+
+---
+
+# Session Report — 2026-08-10 (18) — Stage 16
+
+```text
+Current stage: Stage 16 (Multi-Masjid Administration) — complete.
+Completed:
+  - New collections: data/districts.json (official Perlis districts) and
+    data/editors.json (editor metadata only — no auth, per roadmap rule).
+  - data/masjids.json: every masjid now links district_id (required, FK to
+    districts) and optional editor_id; the free-text district field remains
+    as a display value and must agree with the linked district's name.
+  - tools/validate_data.py: districts/editors become fixed files; masjids are
+    checked for unknown district_id / editor_id and district/name mismatch.
+  - tools/serve.py: /api/districts + /api/editors CRUD; delete-blocking
+    extended so in-use districts/editors cannot be removed; masjid form
+    accepts district_id and back-fills the display name (resolved against the
+    live districts file); district_id derived from free-text district when
+    possible; fresh data dirs seed the official districts.
+  - Admin UI: new admin/districts.html + admin/editors.html pages, Daerah/
+    Editor nav on every page, index stats, masjid page district + editor
+    dropdowns.
+  - tools/import_google_sheet.py: derives district_id on import and passes
+    districts/editors/settings through untouched during the temp validation.
+  - .github/workflows/validate.yml mirror check now covers districts/editors.
+  - Docs updated (DATA_SCHEMA.md sections 4-11, ARCHITECTURE.md file tree,
+    SHEET_IMPORT.md column notes). public/data mirror re-synced.
+Tests:
+  - validate 8/8 (new: missing district_id fails, unknown/mismatched district
+    fails), admin 7/7 (new: district/editor CRUD + reference blocking +
+    district derivation), import_sheet 4/4, build_site 14/14, JS suites
+    events 37/37, masjids 12/12, share 12/12, ics 21/21, maps 9/9.
+  - tools/validate_data.py -> OK on data/; node --check clean;
+    mirror-in-sync check passes.
+Files changed:
+  - data/districts.json, data/editors.json (new), data/masjids.json
+  - public/data/districts.json, public/data/editors.json (new),
+    public/data/masjids.json (mirror)
+  - tools/{validate_data,serve,import_google_sheet}.py
+  - admin/{districts,editors}.html (new) + masjids.html dropdowns + nav on
+    index/events/event-editor/speakers/categories + index stats
+  - tests/{test_validate,test_admin,test_import_sheet}.py
+  - DATA_SCHEMA.md, ARCHITECTURE.md, SHEET_IMPORT.md,
+    .github/workflows/validate.yml, TODO_AGENT.md
+Known issues:
+  - None blocking. Editors are metadata only; authentication/authorization is
+    intentionally deferred until a real requirement exists (roadmap note).
+Next stage: Stage 17 — Federation / Multiple Data Sources (aggregate JSON URL /
+  Git-repo/Google-Sheets/REST feeds; all sources normalize to the canonical
+  schema).
 ```
