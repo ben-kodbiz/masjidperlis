@@ -349,55 +349,49 @@ Workflows: `validate.yml` and `deploy.yml`. Validation on pull request, push to 
 
 ---
 
-# 20. Stage 16 — QR Codes
-
-Generate permanent QR codes for masjid URL and event URL. Point to stable URLs; never encode event details directly.
-
----
-
-# 21. Stage 17 — Multi-Masjid Administration
+# 20. Stage 16 — Multi-Masjid Administration
 
 Introduce organization/ownership concept (State -> District -> Masjid -> Editors -> Events). Establish data model first; do not implement complex multi-tenant auth until there is a real requirement.
 
 ---
 
-# 22. Stage 18 — Federation / Multiple Data Sources
+# 21. Stage 17 — Federation / Multiple Data Sources
 
 Allow multiple event feeds (JSON URL, Git repo, Google Sheets export, REST API) to be aggregated. All sources normalize into the canonical schema.
 
 ---
 
-# 23. Stage 19 — Accessibility
+# 22. Stage 18 — Accessibility
 
 Audit keyboard navigation, headings, labels, focus states, contrast, screen-reader labels, accessible button names, no color-only information.
 
 ---
 
-# 24. Stage 20 — Performance
+# 23. Stage 19 — Performance
 
 Target: small initial download, minimal JS, no unnecessary deps, compressed assets, lazy loading, no large frameworks. Measure HTML/CSS/JS/JSON/image sizes and request counts.
 
 ---
 
-# 25. Stage 21 — Security Review
+# 24. Stage 20 — Security Review
 
 Audit: no secrets in repo/frontend, no unsafe HTML injection, escape user text, safe external links, no client-side admin credentials, minimized workflow permissions, review dependencies, no unnecessary third-party scripts. Update `SECURITY.md`.
 
 ---
 
-# 26. Stage 22 — Documentation
+# 25. Stage 21 — Documentation
 
 README covers purpose, architecture, local development, data format, deployment, admin workflow, Google Sheets adapter, contributing, licensing. Document `DATA_SCHEMA.md`, `ADMIN_GUIDE.md`, `DEPLOYMENT.md` where useful.
 
 ---
 
-# 27. Stage 23 — Production Readiness
+# 26. Stage 22 — Production Readiness
 
-Remove demo data, add real masjids, verify locations/times/timezone, test cancelled/recurring events, mobile/slow/no-JS, GitHub Pages, sharing links, QR codes, sitemap, no credentials exposed.
+Remove demo data, add real masjids, verify locations/times/timezone, test cancelled/recurring events, mobile/slow/no-JS, GitHub Pages, sharing links, sitemap, no credentials exposed.
 
 ---
 
-# 28. Final Acceptance Test
+# 27. Final Acceptance Test
 
 MVP-complete when all work: public homepage, today's events, upcoming events, search, masjid filtering, category filtering, event detail, masjid detail, share, calendar export, directions, cancelled events, recurring events, data validation, GitHub Pages deployment, mobile responsive, no backend/API key/framework.
 
@@ -407,13 +401,13 @@ The public interface must be usable on phones and tablets (mobile-first). Minimu
 
 ---
 
-# 29. Future Ideas — DO NOT IMPLEMENT YET
+# 28. Future Ideas — DO NOT IMPLEMENT YET
 
-Android/iOS apps, Telegram bot, WhatsApp integration, email/browser notifications, RSS feeds, public API, statewide federation, event subscriptions, masjid dashboards, analytics, multilingual/Jawi support, offline-first enhancements. Do not implement unless explicitly requested.
+Android/iOS apps, Telegram bot, WhatsApp integration, email/browser notifications, RSS feeds, public API, statewide federation, event subscriptions, masjid dashboards, analytics, multilingual/Jawi support, offline-first enhancements, **QR codes for masjid/event URLs** (deferred; re-introduce only when explicitly requested — point at stable URLs, never encode event details directly). Do not implement unless explicitly requested.
 
 ---
 
-# 30. Agent Operating Rule
+# 29. Agent Operating Rule
 
 At the end of every implementation session, update this file. For completed stages: `[x] Stage N — Name`. For incomplete stages: `[ ] Stage N — Name`. Do not mark a stage complete unless acceptance criteria pass.
 
@@ -1157,6 +1151,33 @@ Files changed:
 Known issues:
   - None blocking. The validate job is read-only (contents: read); live
     GitHub-run verification requires a push/PR on GitHub.
-Next stage: Stage 16 — QR Codes (permanent QR codes for masjid and event
-  URLs; point at stable URLs, never encode event details directly).
+Next stage: Stage 16 — Multi-Masjid Administration (organization/ownership model).
+  Note: QR codes moved off the active roadmap to Future Ideas (deferred to a
+  future upgrade).
+```
+
+---
+
+# Session Report — 2026-08-10 (17) — Roadmap update (QR codes deferred)
+
+```text
+Current stage: Stage 15 complete; Stage 16 redefined as Multi-Masjid
+  Administration.
+Completed:
+  - Previous "Stage 16 — QR Codes" removed from the active roadmap so it is
+    not built during Stage 16+ work.
+  - QR codes re-homed under Future Ideas ("DO NOT IMPLEMENT YET"); note added
+    that re-introduction requires an explicit request and must point at stable
+    URLs (never encode event details directly).
+  - Subsequent stages renumbered: Multi-Masjid -> Stage 16, Federation -> 17,
+    Accessibility -> 18, Performance -> 19, Security Review -> 20,
+    Documentation -> 21, Production Readiness -> 22, Final Acceptance -> # 27.
+  - "QR codes" removed from the Production Readiness (Stage 22) checklist.
+Tests:
+  - No code changed; full suite unaffected (all suites green as of Stage 15).
+Files changed:
+  - TODO_AGENT.md (roadmap renumber, QR moved to Future Ideas, this report)
+Known issues:
+  - None.
+Next stage: Stage 16 — Multi-Masjid Administration.
 ```
