@@ -342,6 +342,11 @@ Optional data source, implemented as an adapter (Importer -> Canonical JSON -> V
 
 Workflows: `validate.yml` and `deploy.yml`. Validation on pull request, push to main, data changes. Broken data prevents deployment.
 
+### Acceptance
+- [x] `validate.yml` runs on pull request to main/master and on pushes touching data/tools/tests/public/admin/workflows.
+- [x] Validation covers canonical data, all Python suites, all JS suites, JS syntax, and the public mirror being in sync.
+- [x] `deploy.yml` validates canonical data before building; broken data blocks the deploy.
+
 ---
 
 # 20. Stage 16 — QR Codes
@@ -1117,4 +1122,41 @@ Known issues:
     resolve to the id of the first match; keep display names unique.
 Next stage: Stage 15 — GitHub Actions Automation (`validate.yml` + deploy
   hardening; validation on PR/push/data changes, broken data blocks deploy).
+```
+
+---
+
+# Session Report — 2026-08-10 (16) — Stage 15 (GitHub Actions Automation)
+
+```text
+Current stage: Stage 15 (GitHub Actions Automation) — complete.
+Completed:
+  - .github/workflows/validate.yml (new): runs on pull_request to main/master
+    and on push (paths: data/, public/js + SPA templates + css/, tools/,
+    tests/, admin/, .github/workflows/). Steps: validate canonical data;
+    run the four Python suites (validate, build_site, admin, import_sheet);
+    run all five Node suites (events, masjids, share, ics, maps); node --check
+    every public/js/*.js plus admin/admin.js; verify public/data/ mirror is
+    byte-equal to data/ (reports a helpful message when out of sync).
+  - .github/workflows/deploy.yml: added a "Validate canonical data (broken
+    data blocks deployment)" step that runs tools/validate_data.py before the
+    data sync and build steps, so invalid data fails the build job and cannot
+    be published.
+Tests:
+  - Both YAML workflow files parsed with PyYAML (schema/keys/jobs sanity).
+  - Every command the workflows run was executed locally (all green): full
+    Python + JS suites, validate_data OK on data/, node --check clean,
+    mirror-in-sync check passes.
+  - Remaining suites unchanged and green: admin 6/6, import_sheet 4/4,
+    validate 6/6, build_site 14/14, events 37/37, masjids 12/12,
+    share 12/12, ics 21/21, maps 9/9.
+Files changed:
+  - .github/workflows/validate.yml (new)
+  - .github/workflows/deploy.yml (validation gate step)
+  - TODO_AGENT.md (Stage 15 acceptance checked, this report appended)
+Known issues:
+  - None blocking. The validate job is read-only (contents: read); live
+    GitHub-run verification requires a push/PR on GitHub.
+Next stage: Stage 16 — QR Codes (permanent QR codes for masjid and event
+  URLs; point at stable URLs, never encode event details directly).
 ```

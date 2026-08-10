@@ -21,6 +21,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Validate canonical data (broken data blocks deployment)
+        run: python3 tools/validate_data.py
+
       - name: Sync canonical data into public site
         run: |
           mkdir -p public/data

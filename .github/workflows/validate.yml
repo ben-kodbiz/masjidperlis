@@ -1,0 +1,79 @@
+name: Validate
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - "data/**"
+      - "public/js/**"
+      - "public/index.html"
+      - "public/events.html"
+      - "public/masjids.html"
+      - "public/event.html"
+      - "public/masjid.html"
+      - "public/css/**"
+      - "tools/**"
+      - "tests/**"
+      - "admin/**"
+      - ".github/workflows/**"
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Validate canonical data
+        run: python3 tools/validate_data.py
+
+      - name: Python test suites
+        run: |
+          python3 tests/test_validate.py
+          python3 tests/test_build_site.py
+          python3 tests/test_admin.py
+          python3 tests/test_import_sheet.py
+
+      - name: JavaScript test suites
+        run: |
+          node tests/test_events.js
+          node tests/test_masjids.js
+          node tests/test_share.js
+          node tests/test_ics.js
+          node tests/test_maps.js
+
+      - name: JavaScript syntax check
+        run: |
+          for f in public/js/*.js; do node --check "$f"; done
+          node --check admin/admin.js
+
+      - name: Public data mirror is in sync
+        run: |
+          python3 - <<'PY'
+          import json, pathlib, sys
+          ok = True
+          for name in ("masjids", "events", "speakers", "categories", "settings"):
+              a = json.loads(pathlib.Path(f"data/{name}.json").read_text(encoding="utf-8"))
+              b = json.loads(pathlib.Path(f"public/data/{name}.json").read_text(encoding="utf-8"))
+              if a != b:
+                  ok = False
+                  print(f"public/data/{name}.json is out of sync with data/{name}.json — "
+                        "run the admin tool's Terbitkan step or rebuild public/data.")
+          sys.exit(0 if ok else 1)
+          PY
