@@ -137,8 +137,11 @@ def test_happy_merge_add_update_skip():
         by_id = {m["id"]: m for m in masjids}
         # update applied
         assert by_id["masjid-alwi"]["name"] == "Masjid Alwi (Baharu)", by_id["masjid-alwi"]
+        # district_id derived from the free-text district column
+        assert by_id["masjid-alwi"]["district_id"] == "kangar", by_id["masjid-alwi"]
         # new masjid added (kept others, not pruned)
         assert "masjid-import-satu" in by_id
+        assert by_id["masjid-import-satu"]["district_id"] == "arau", by_id["masjid-import-satu"]
         assert "masjid-ar-rahmah" in by_id and "masjid-an-nur" in by_id
 
         # new speaker/category added
@@ -171,8 +174,8 @@ def test_happy_merge_add_update_skip():
 def test_duplicate_explicit_id_skipped_strict_aborts():
     tmp, data_dir = make_env()
     write_csv(tmp, "masjids.csv", COLS["masjids"], [
-        ["masjid-dupe", "Masjid Dupe Satu", None, None, None, None, None, None, None],
-        ["masjid-dupe", "Masjid Dupe Dua", None, None, None, None, None, None, None],
+        ["masjid-dupe", "Masjid Dupe Satu", "Padang Besar", None, None, None, None, None, None],
+        ["masjid-dupe", "Masjid Dupe Dua", "Padang Besar", None, None, None, None, None, None],
     ])
     write_csv(tmp, "speakers.csv", COLS["speakers"], [])
     write_csv(tmp, "categories.csv", COLS["categories"], [])

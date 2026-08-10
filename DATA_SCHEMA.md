@@ -12,6 +12,8 @@ data/
 ├── masjids.json
 ├── speakers.json
 ├── categories.json
+├── districts.json
+├── editors.json
 └── settings.json
 ```
 
@@ -130,17 +132,19 @@ Valid weekday names: `monday`, `tuesday`, `wednesday`, `thursday`, `friday`, `sa
 
 An array of masjid objects.
 
-| Field       | Type   | Required | Notes                                |
-| ----------- | ------ | -------- | ------------------------------------ |
-| `id`        | string | yes      | unique, stable, URL-safe             |
-| `name`      | string | yes      | display name                         |
-| `district`  | string | no       | e.g. `Kangar`                        |
-| `state`     | string | no       | e.g. `Perlis`                        |
-| `address`   | string | no       | free-text address                    |
-| `latitude`  | number | no       | decimal degrees                      |
-| `longitude` | number | no       | decimal degrees                      |
-| `contact`   | string | no       | phone / email                        |
-| `website`   | string | no       | URL                                  |
+| Field        | Type   | Required | Notes                                |
+| ------------ | ------ | -------- | ------------------------------------ |
+| `id`         | string | yes      | unique, stable, URL-safe             |
+| `name`       | string | yes      | display name                         |
+| `district`   | string | no       | free-text display value, e.g. `Kangar`; when `district_id` is set it must match that district's name |
+| `district_id`| string | yes      | must reference `districts.json`      |
+| `editor_id`  | string | no       | must reference `editors.json`        |
+| `state`      | string | no       | e.g. `Perlis`                        |
+| `address`    | string | no       | free-text address                    |
+| `latitude`   | number | no       | decimal degrees                      |
+| `longitude`  | number | no       | decimal degrees                      |
+| `contact`    | string | no       | phone / email                        |
+| `website`    | string | no       | URL                                  |
 
 ### Example
 
@@ -149,6 +153,8 @@ An array of masjid objects.
   "id": "masjid-alwi",
   "name": "Masjid Alwi",
   "district": "Kangar",
+  "district_id": "kangar",
+  "editor_id": "editor-pengurusan",
   "state": "Perlis",
   "address": "Jalan Tuanku Syed Putra, 01000 Kangar, Perlis",
   "latitude": 6.4405,
@@ -158,11 +164,62 @@ An array of masjid objects.
 }
 ```
 
-The ID must remain stable even if the display name changes.
+The ID must remain stable even if the display name changes. `district` is a
+display convenience: `district_id` is the canonical link, and the two must not
+disagree.
 
 ---
 
-## 4. Speakers (`data/speakers.json`)
+## 4. Districts (`data/districts.json`)
+
+An array of district objects (the districts of Perlis).
+
+| Field         | Type   | Required | Notes             |
+| ------------- | ------ | -------- | ----------------- |
+| `id`          | string | yes      | unique, kebab-case |
+| `name`        | string | yes      | display name, e.g. `Kangar` |
+| `description` | string | no       | short description |
+
+### Example
+
+```json
+{
+  "id": "kangar",
+  "name": "Kangar",
+  "description": "Ibu negeri Perlis dan daerah sekitarnya."
+}
+```
+
+Fresh data dirs (new `serve.py` setups) are seeded with the official Perlis
+districts; the list is then maintained via the admin tool.
+
+---
+
+## 5. Editors (`data/editors.json`)
+
+An array of editor objects. Editors are the local administrators who manage
+masjid records (linked via `masjid.editor_id`). Access control itself remains
+an admin-tool concern — editors are metadata, not credentials.
+
+| Field         | Type   | Required | Notes                    |
+| ------------- | ------ | -------- | ------------------------ |
+| `id`          | string | yes      | unique, kebab-case       |
+| `name`        | string | yes      | display name             |
+| `email`       | string | no       | contact e-mail           |
+| `role`        | string | no       | e.g. `editor`, `superuser` |
+| `description` | string | no       | short description        |
+
+### Example
+
+```json
+{
+  "id": "editor-pengurusan",
+  "name": "Pengurusan Masjid Events Perlis",
+  "email": "hello@example.com",
+  "role": "superuser",
+  "description": "Editor utama penyelaras data acara."
+}
+```
 
 An array of speaker objects.
 
@@ -186,7 +243,7 @@ Speaker data is optional for events. An event with no `speaker_id` is valid.
 
 ---
 
-## 5. Categories (`data/categories.json`)
+## 7. Categories (`data/categories.json`)
 
 An array of category objects.
 
@@ -215,7 +272,7 @@ The category list is configurable.
 
 ---
 
-## 6. Settings (`data/settings.json`)
+## 8. Settings (`data/settings.json`)
 
 A single settings object (not an array).
 
@@ -233,13 +290,13 @@ A single settings object (not an array).
 
 ---
 
-# 7. Required vs optional summary
+## 6. Required vs optional summary
 
 Required in every record:
 
 ```text
 event:    id, title, masjid_id, date, start_time, status
-masjid:   id, name
+masjid:   id, name, district_id
 speaker:  id, name
 category: id, name
 ```
@@ -248,16 +305,19 @@ Everything else is optional.
 
 ---
 
-## 7. Reference integrity
+## 9. Reference integrity
 
 * Every `event.masjid_id` must exist in `masjids.json`.
 * Every `event.speaker_id` must exist in `speakers.json` (unless null/absent).
 * Every `event.category_id` must exist in `categories.json`.
+* Every `masjid.district_id` must exist in `districts.json`.
+* Every `masjid.editor_id` must exist in `editors.json` (unless null/absent).
+* If both `masjid.district` and `masjid.district_id` are present they must agree.
 * IDs must not be duplicated within their own file.
 
 ---
 
-## 8. Versioning / evolution
+## 10. Versioning / evolution
 
 The canonical model is a contract. Changes should be additive where possible:
 
@@ -268,7 +328,7 @@ Current model version tracked visually in this document. (Future model metadata 
 
 ---
 
-# 9. Timezone handling
+# 11. Timezone handling
 
 All dates and times in the data model are **wall-clock local Malaysia time** (IANA zone `Asia/Kuala_Lumpur`, UTC+8, no daylight-saving changes):
 

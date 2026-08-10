@@ -170,6 +170,8 @@ Browser
        +-- masjids.json
        +-- speakers.json
        +-- categories.json
+       +-- districts.json
+       +-- editors.json
 ```
 
 The browser performs local filtering/search against the downloaded dataset.

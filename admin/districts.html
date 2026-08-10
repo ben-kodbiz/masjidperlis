@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Kategori — Panel Pengurusan</title>
+  <title>Daerah — Panel Pengurusan</title>
   <link rel="stylesheet" href="admin.css">
 </head>
-<body data-page="categories">
+<body data-page="districts">
   <header class="admin-header">
     <div class="inner">
       <a class="brand" href="index.html">Panel Pengurusan<small>Masjid Events Perlis</small></a>
@@ -26,35 +26,40 @@
 
   <main>
     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-      <h1>Kategori</h1>
-      <button type="button" class="btn" id="btn-new">+ Kategori baru</button>
+      <h1>Daerah</h1>
+      <button type="button" class="btn" id="btn-new">+ Daerah baru</button>
     </div>
     <div id="alert" class="alert" role="alert"></div>
 
     <section id="list-panel" class="card">
       <div class="table-scroll">
-        <table aria-label="Senarai kategori">
+        <table aria-label="Senarai daerah">
           <thead>
             <tr>
               <th>Nama</th>
-              <th>Acara</th>
+              <th>Penerangan</th>
+              <th>Masjid</th>
               <th>Tindakan</th>
             </tr>
           </thead>
           <tbody id="rows"></tbody>
         </table>
       </div>
-      <p id="empty" class="muted" hidden style="padding: 12px 16px;">Tiada kategori.</p>
+      <p id="empty" class="muted" hidden style="padding: 12px 16px;">Tiada daerah.</p>
     </section>
 
     <section id="edit-panel" class="card" hidden>
       <div class="card-head">
-        <h2 id="edit-title">Kategori baru</h2>
+        <h2 id="edit-title">Daerah baru</h2>
       </div>
       <form id="editor" style="padding: 16px;" novalidate>
         <div class="field">
           <label for="name">Nama *</label>
           <input id="name" name="name" required>
+        </div>
+        <div class="field">
+          <label for="description">Penerangan</label>
+          <textarea id="description" name="description" rows="3"></textarea>
         </div>
         <div class="button-row">
           <button type="submit" class="btn">Simpan</button>
@@ -76,16 +81,17 @@
       function ok(msg) { A.clearAlert(alertBox); A.showAlert(alertBox, "ok", msg); }
 
       function render(d) {
-        document.getElementById("rows").innerHTML = d.categories.map(function (c) {
-          var count = d.events.filter(function (e) { return e.category_id === c.id; }).length;
+        document.getElementById("rows").innerHTML = d.districts.map(function (x) {
+          var count = d.masjids.filter(function (m) { return m.district_id === x.id; }).length;
           return "<tr>" +
-            "<td><strong>" + A.esc(c.name) + "</strong></td>" +
+            "<td><strong>" + A.esc(x.name) + "</strong></td>" +
+            "<td>" + A.esc(x.description || "—") + "</td>" +
             "<td>" + count + "</td>" +
-            '<td><button type="button" class="btn btn-ghost btn-sm" data-act="edit" data-id="' + c.id + '">Edit</button>' +
-            '<button type="button" class="btn btn-danger btn-sm" data-act="delete" data-id="' + c.id + '">Padam</button></td>' +
+            '<td><button type="button" class="btn btn-ghost btn-sm" data-act="edit" data-id="' + x.id + '">Edit</button>' +
+            '<button type="button" class="btn btn-danger btn-sm" data-act="delete" data-id="' + x.id + '">Padam</button></td>' +
           "</tr>";
         }).join("");
-        document.getElementById("empty").hidden = d.categories.length > 0;
+        document.getElementById("empty").hidden = d.districts.length > 0;
       }
 
       function load() {
@@ -94,10 +100,11 @@
         });
       }
 
-      function showForm(c) {
-        editId = c ? c.id : "";
-        document.getElementById("edit-title").textContent = c ? "Sunting — " + c.name : "Kategori baru";
-        document.getElementById("name").value = c ? c.name : "";
+      function showForm(x) {
+        editId = x ? x.id : "";
+        document.getElementById("edit-title").textContent = x ? "Sunting — " + x.name : "Daerah baru";
+        document.getElementById("name").value = x ? x.name : "";
+        document.getElementById("description").value = x ? x.description || "" : "";
         document.getElementById("list-panel").hidden = true;
         document.getElementById("edit-panel").hidden = false;
       }
@@ -115,12 +122,12 @@
         var act = btn.dataset.act, id = btn.dataset.id;
         if (act === "edit") {
           A.loadData().then(function (d) {
-            var c = d.categories.find(function (x) { return x.id === id; });
-            if (c) showForm(c); else err(["Kategori tidak dijumpai."]);
+            var x = d.districts.find(function (r) { return r.id === id; });
+            if (x) showForm(x); else err(["Daerah tidak dijumpai."]);
           });
         } else if (act === "delete") {
-          if (!A.confirm("Padamkan kategori ini?")) return;
-          A.api("DELETE", "/api/categories/" + id).then(function (res) {
+          if (!A.confirm("Padamkan daerah ini?")) return;
+          A.api("DELETE", "/api/districts/" + id).then(function (res) {
             if (!res.ok) { err(res.json.errors || ["Tidak dapat dipadam."]); return; }
             load();
           }).catch(function () { err(["Tiada sambungan ke pelayan tempatan."]); });
@@ -129,12 +136,15 @@
 
       document.getElementById("editor").addEventListener("submit", function (ev) {
         ev.preventDefault();
-        var payload = { name: document.getElementById("name").value };
-        var p = editId ? A.api("PUT", "/api/categories/" + editId, payload)
-                       : A.api("POST", "/api/categories", payload);
+        var payload = {
+          name: document.getElementById("name").value,
+          description: document.getElementById("description").value
+        };
+        var p = editId ? A.api("PUT", "/api/districts/" + editId, payload)
+                       : A.api("POST", "/api/districts", payload);
         p.then(function (res) {
           if (!res.ok) { err(res.json.errors || ["Tidak dapat disimpan."]); return; }
-          ok(editId ? "Kategori dikemas kini." : "Kategori dicipta.");
+          ok(editId ? "Daerah dikemas kini." : "Daerah dicipta.");
           editId = "";
           document.getElementById("edit-panel").hidden = true;
           document.getElementById("list-panel").hidden = false;

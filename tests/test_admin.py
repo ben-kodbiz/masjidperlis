@@ -23,7 +23,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SERVE = ROOT / "tools" / "serve.py"
 
-DATA_FILES = ("masjids.json", "events.json", "speakers.json", "categories.json", "settings.json")
+DATA_FILES = ("masjids.json", "events.json", "speakers.json", "categories.json",
+              "settings.json", "districts.json", "editors.json")
 
 
 def free_port():
@@ -105,6 +106,8 @@ def test_crud_masjid_speaker_category():
         assert status == 201, (status, created)
         mid = created["id"]
         assert mid == "masjid-ujian", mid
+        # district_id derived from the free-text district
+        assert created["record"]["district_id"] == "kangar", created
 
         status, speaker = admin.request("POST", "/api/speakers",
                                         {"name": "Ustaz Ujian", "description": "Ahli jawatankuasa"})
@@ -157,7 +160,7 @@ def test_crud_masjid_speaker_category():
 def test_event_lifecycle_and_status():
     admin = Admin()
     try:
-        _, created = admin.request("POST", "/api/masjids", {"name": "Masjid Alwi"})
+        _, created = admin.request("POST", "/api/masjids", {"name": "Masjid Alwi", "district": "Kangar"})
         mid = created["id"]
         _, cat = admin.request("POST", "/api/categories", {"name": "Kuliyyah"})
         cid = cat["id"]
@@ -198,7 +201,7 @@ def test_event_lifecycle_and_status():
 def test_recurrence_and_preview():
     admin = Admin()
     try:
-        _, created = admin.request("POST", "/api/masjids", {"name": "Masjid Alwi"})
+        _, created = admin.request("POST", "/api/masjids", {"name": "Masjid Alwi", "district": "Kangar"})
         mid = created["id"]
 
         status, ev = admin.request("POST", "/api/events", {
@@ -236,7 +239,7 @@ def test_recurrence_and_preview():
 def test_validation_rollback():
     admin = Admin()
     try:
-        _, created = admin.request("POST", "/api/masjids", {"name": "Masjid Rollback"})
+        _, created = admin.request("POST", "/api/masjids", {"name": "Masjid Rollback", "district": "Arau"})
         mid = created["id"]
 
         # create a valid event first
@@ -274,7 +277,7 @@ def test_validation_rollback():
 def test_publish_mirrors_data():
     admin = Admin()
     try:
-        _, created = admin.request("POST", "/api/masjids", {"name": "Masjid Publish"})
+        _, created = admin.request("POST", "/api/masjids", {"name": "Masjid Publish", "district": "Kangar"})
         assert created["id"] == "masjid-publish"
 
         status, resp = admin.request("POST", "/api/publish", {})
@@ -290,11 +293,70 @@ def test_publish_mirrors_data():
         admin.shutdown()
 
 
+def test_district_editor_crud_and_references():
+    admin = Admin()
+    try:
+        # new data dirs start with the official Perlis districts
+        districts = admin.data()["districts"]
+        assert any(d["id"] == "kangar" for d in districts), districts
+
+        # create an editor
+        status, editor = admin.request("POST", "/api/editors",
+                                       {"name": "Ustaz Pentadbir", "email": "a@b.co"})
+        assert status == 201, (status, editor)
+        eid = editor["id"]
+        assert eid == "editor-ustaz-pentadbir", eid
+
+        # add a new district
+        status, district = admin.request("POST", "/api/districts",
+                                         {"name": "Titi Tinggi", "description": "Baharu"})
+        assert status == 201, (status, district)
+        did = district["id"]
+        assert did == "titi-tinggi", did
+
+        # masjid linking district_id + editor_id
+        status, masjid = admin.request("POST", "/api/masjids", {
+            "name": "Masjid Titi Tinggi",
+            "district_id": did,
+            "editor_id": eid,
+        })
+        assert status == 201, (status, masjid)
+        mid = masjid["id"]
+        assert masjid["record"]["district_id"] == did
+        assert masjid["record"]["district"] == "Titi Tinggi", masjid["record"]
+        assert masjid["record"]["editor_id"] == eid
+
+        # updating the district name without changing district_id => mismatch must reject
+        status, resp = admin.request("PUT", f"/api/districts/{did}",
+                                     {"name": "Titi Tinggi Lama", "description": "Baharu"})
+        assert status == 400, (status, resp)
+        assert any("does not match" in e for e in resp["errors"]), resp
+
+        # delete the referenced district -> blocked
+        status, resp = admin.request("DELETE", f"/api/districts/{did}")
+        assert status == 400, (status, resp)
+        assert "referenced" in resp["errors"][0], resp
+
+        # delete the referenced editor -> blocked
+        status, resp = admin.request("DELETE", f"/api/editors/{eid}")
+        assert status == 400, (status, resp)
+        assert "referenced" in resp["errors"][0], resp
+
+        # once the masjid is gone, both can be deleted
+        status, _ = admin.request("DELETE", f"/api/masjids/{mid}")
+        assert status == 200, status
+        assert admin.request("DELETE", f"/api/districts/{did}")[0] == 200
+        assert admin.request("DELETE", f"/api/editors/{eid}")[0] == 200
+    finally:
+        admin.shutdown()
+
+
 def test_static_pages_served():
     admin = Admin()
     try:
         for page in ("/admin/index.html", "/admin/events.html", "/admin/event-editor.html",
                      "/admin/masjids.html", "/admin/speakers.html", "/admin/categories.html",
+                     "/admin/districts.html", "/admin/editors.html",
                      "/admin/admin.css", "/admin/admin.js"):
             assert admin.status_of("GET", page) == 200, page
         assert admin.status_of("GET", "/admin/add-masjid.html") == 200

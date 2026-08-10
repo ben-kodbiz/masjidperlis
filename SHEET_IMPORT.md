@@ -64,13 +64,17 @@ Per-source options:
 
 The reference data files must agree with `DATA_SCHEMA.md`.
 
+`districts.json` and `editors.json` are not imported from sheets; they are
+passed through untouched (maintain them via the admin tool or by editing the
+JSON directly).
+
 ### Masjids tab
 
 | Sheet header | Canonical field | Notes |
 | ------------ | --------------- | ----- |
 | `id` | `id` | optional; else slug from `name` |
 | `Nama` | `name` | required |
-| `Daerah` | `district` | optional |
+| `Daerah` | `district` | optional; `district_id` is derived from a recognised Perlis district name |
 | `Negeri` | `state` | default `Perlis` |
 | `Alamat` | `address` | optional |
 | `Latitud` | `latitude` | number, optional |

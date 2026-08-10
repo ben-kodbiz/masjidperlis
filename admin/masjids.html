@@ -17,6 +17,8 @@
           <li><a href="masjids.html" data-page="masjids">Masjid</a></li>
           <li><a href="speakers.html" data-page="speakers">Penceramah</a></li>
           <li><a href="categories.html" data-page="categories">Kategori</a></li>
+          <li><a href="districts.html" data-page="districts">Daerah</a></li>
+          <li><a href="editors.html" data-page="editors">Editor</a></li>
         </ul>
       </nav>
     </div>
@@ -62,8 +64,17 @@
             <input id="name" name="name" required maxlength="200">
           </div>
           <div class="field">
-            <label for="district">Daerah</label>
-            <input id="district" name="district">
+            <label for="district">Daerah *</label>
+            <select id="district" name="district">
+              <option value="">— pilih daerah —</option>
+            </select>
+            <small class="hint">Nilai teks <code>district</code> dijana dari pilihan ini.</small>
+          </div>
+          <div class="field">
+            <label for="editor_id">Editor</label>
+            <select id="editor_id" name="editor_id">
+              <option value="">— tiada —</option>
+            </select>
           </div>
           <div class="field">
             <label for="state">Negeri</label>
@@ -105,16 +116,41 @@
       var A = window.Admin;
       var alertBox = document.getElementById("alert");
       var editId = "";
+      var cached = { districts: [], editors: [] };
+
+      function populateSelects(d) {
+        cached.districts = d.districts || [];
+        cached.editors = d.editors || [];
+        var ds = document.getElementById("district");
+        ds.innerHTML = "<option value=\"\">— pilih daerah —</option>" +
+          cached.districts.map(function (x) {
+            return '<option value="' + A.esc(x.id) + '">' + A.esc(x.name) + "</option>";
+          }).join("");
+        var es = document.getElementById("editor_id");
+        es.innerHTML = "<option value=\"\">— tiada —</option>" +
+          cached.editors.map(function (x) {
+            return '<option value="' + A.esc(x.id) + '">' + A.esc(x.name) + "</option>";
+          }).join("");
+      }
 
       function err(items) { A.clearAlert(alertBox); A.showAlert(alertBox, "err", items); }
       function ok(msg) { A.clearAlert(alertBox); A.showAlert(alertBox, "ok", msg); }
+
+      function districtName(d, id) {
+        if (id) {
+          var found = d.districts.find(function (x) { return x.id === id; });
+          if (found) return found.name;
+          return id;
+        }
+        return d.district || "";
+      }
 
       function render(d) {
         document.getElementById("rows").innerHTML = d.masjids.map(function (m) {
           var count = d.events.filter(function (e) { return e.masjid_id === m.id; }).length;
           return "<tr>" +
             "<td><strong>" + A.esc(m.name) + "</strong></td>" +
-            "<td>" + A.esc(m.district || "—") + "</td>" +
+            "<td>" + A.esc(districtName(d, m.district_id) || m.district || "—") + "</td>" +
             "<td>" + A.esc(m.address || "—") + "</td>" +
             "<td>" + A.esc(m.contact || "—") + "</td>" +
             "<td>" + count + "</td>" +
@@ -126,7 +162,7 @@
       }
 
       function load() {
-        A.loadData().then(function (d) { render(d); }).catch(function (e) {
+        A.loadData().then(function (d) { populateSelects(d); render(d); }).catch(function (e) {
           err(["Gagal memuat data: " + e.message]);
         });
       }
@@ -135,7 +171,8 @@
         editId = m ? m.id : "";
         document.getElementById("edit-title").textContent = m ? "Sunting — " + m.name : "Masjid baru";
         document.getElementById("name").value = m ? m.name : "";
-        document.getElementById("district").value = m ? m.district || "" : "";
+        document.getElementById("district").value = m ? (m.district_id || "") : "";
+        document.getElementById("editor_id").value = m ? (m.editor_id || "") : "";
         document.getElementById("state").value = m ? m.state || "Perlis" : "Perlis";
         document.getElementById("address").value = m ? m.address || "" : "";
         document.getElementById("latitude").value = m && m.latitude != null ? m.latitude : "";
@@ -176,7 +213,8 @@
         ev.preventDefault();
         var payload = {
           name: document.getElementById("name").value,
-          district: document.getElementById("district").value,
+          district_id: document.getElementById("district").value || null,
+          editor_id: document.getElementById("editor_id").value || null,
           state: document.getElementById("state").value,
           address: document.getElementById("address").value,
           latitude: document.getElementById("latitude").value || null,

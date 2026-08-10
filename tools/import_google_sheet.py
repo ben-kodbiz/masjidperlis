@@ -72,6 +72,7 @@ from serve import (  # noqa: E402  (reuse the admin editor's normalization)
     VALID_RECURRENCE_TYPES,
     VALID_STATUSES,
     VALID_WEEKDAYS,
+    district_id_for,
     next_category_id,
     next_event_id,
     next_masjid_id,
@@ -83,7 +84,8 @@ from serve import (  # noqa: E402  (reuse the admin editor's normalization)
 )
 from validate_data import validate_directory  # noqa: E402
 
-DATA_FILES = ("masjids.json", "events.json", "speakers.json", "categories.json", "settings.json")
+DATA_FILES = ("masjids.json", "events.json", "speakers.json", "categories.json",
+              "settings.json", "districts.json", "editors.json")
 KINDS = ("categories", "speakers", "masjids", "events")
 ORDER_OF_KINDS = ("categories", "speakers", "masjids", "events")
 
@@ -291,6 +293,10 @@ class Importer:
         }[kind](fields)
         if errors:
             raise _RowError("; ".join(errors))
+        if kind == "masjids":
+            # derive district_id from the free-text district so imported
+            # masjids link to data/districts.json automatically.
+            rec["district_id"] = district_id_for(rec.get("district"))
         return {"id": _id, **rec}
 
     def _normalize_events(self, existing, merged, skipped):
@@ -385,8 +391,9 @@ class Importer:
             raise RuntimeError(f"data dir not found: {self.cfg.data_dir}")
 
         merged, skipped = self.normalize(existing)
-        # settings pass through untouched
-        merged["settings.json"] = existing["settings.json"]
+        # settings and reference collections pass through untouched
+        for fname in ("settings.json", "districts.json", "editors.json"):
+            merged[fname] = existing[fname]
 
         # validate the merged set against a throwaway copy (never touch data/)
         with tempfile.TemporaryDirectory(prefix="mvp-import-") as tmp:

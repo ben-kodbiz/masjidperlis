@@ -5,6 +5,7 @@ Validates all data files in the canonical data set:
 
     data/masjids.json     data/events.json
     data/speakers.json    data/categories.json    data/settings.json
+    data/districts.json   data/editors.json
 
 Checks performed (see DATA_SCHEMA.md):
     - malformed JSON
@@ -13,6 +14,7 @@ Checks performed (see DATA_SCHEMA.md):
     - invalid dates and times
     - invalid event status
     - unknown masjid / speaker / category references
+    - unknown district / editor references (masjids)
     - invalid recurring-event configuration
     - obviously invalid event ranges (end_time not later than start_time)
 
@@ -39,7 +41,8 @@ ID_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 
 DEFAULT_DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 
-FIXED_FILES = ("masjids.json", "events.json", "speakers.json", "categories.json", "settings.json")
+FIXED_FILES = ("masjids.json", "events.json", "speakers.json", "categories.json",
+               "settings.json", "districts.json", "editors.json")
 
 REQUIRED_EVENT = ("id", "title", "masjid_id", "date", "start_time", "status")
 REQUIRED_ID_NAME = ("id", "name")
@@ -93,11 +96,13 @@ def _check_time(value, label, errors):
         errors.append(f"{label}: invalid time {t!r} (use HH:MM).")
 
 
-def _validate_id_list(filename, items, errors):
-    """Validate an array of {id, ...} records; returns the set of ids."""
-    ids = set()
+def _validate_id_list(filename, items, errors, require_name=True):
+    """Validate an array of {id, ...} records; returns the list of records (in
+    order). Duplicate-id / missing-name problems are reported as errors."""
+    records = []
     if items is None:
-        return ids
+        return records
+    ids = set()
     for index, item in enumerate(items):
         where = f"{filename}[{index}]"
         if not isinstance(item, dict):
@@ -115,10 +120,50 @@ def _validate_id_list(filename, items, errors):
         if eid in ids:
             errors.append(f"{where}: duplicate id {eid!r}.")
         ids.add(eid)
-        name = item.get("name")
-        if not isinstance(name, str) or not name.strip():
-            errors.append(f"{where} ({eid!r}): missing required field 'name'.")
-    return ids
+        if require_name:
+            name = item.get("name")
+            if not isinstance(name, str) or not name.strip():
+                errors.append(f"{where} ({eid!r}): missing required field 'name'.")
+        records.append(item)
+    return records
+
+
+def _validate_masjids(masjids, districts, editors, errors):
+    """Check masjid -> district / editor references and district consistency."""
+    district_ids = {d.get("id") for d in districts}
+    district_names = {str(d.get("name") or "").strip().lower() for d in districts}
+    editor_ids = {e.get("id") for e in editors}
+
+    for index, masjid in enumerate(masjids):
+        if not isinstance(masjid, dict):
+            continue
+        label = "masjids.json[%d]" % index
+        eid = masjid.get("id")
+        if isinstance(eid, str) and eid:
+            label = f"masjid {eid!r}"
+
+        did = str(masjid.get("district_id") or "").strip()
+        if not did:
+            errors.append(f"{label}: missing required field 'district_id'.")
+        elif did not in district_ids:
+            errors.append(f"{label}: unknown district_id {did!r}.")
+
+        # Free-text 'district' should match the selected district's name so the
+        # public filter list and the linked district stay consistent.
+        district_name = str(masjid.get("district") or "").strip()
+        if did in district_ids and district_name:
+            matching = str(
+                next((d.get("name") for d in districts if d.get("id") == did), "")
+            ).strip()
+            if district_name.strip().lower() != matching.lower():
+                errors.append(
+                    f"{label}: district {district_name!r} does not match the "
+                    f"name of district_id {did!r} ({matching!r})."
+                )
+
+        editor_id = str(masjid.get("editor_id") or "").strip()
+        if editor_id and editor_id not in editor_ids:
+            errors.append(f"{label}: unknown editor_id {editor_id!r}.")
 
 
 def _check_recurrence(recurrence, settings, label, errors):
@@ -187,6 +232,8 @@ def validate_directory(data_dir):
     speakers = parsed["speakers.json"]
     categories = parsed["categories.json"]
     settings = parsed["settings.json"]
+    districts = parsed["districts.json"]
+    editors = parsed["editors.json"]
 
     if not isinstance(masjids, list):
         errors.append("masjids.json: must be an array.")
@@ -198,13 +245,23 @@ def validate_directory(data_dir):
         errors.append("categories.json: must be an array.")
     if not isinstance(settings, dict):
         errors.append("settings.json: must be an object.")
+    if not isinstance(districts, list):
+        errors.append("districts.json: must be an array.")
+    if not isinstance(editors, list):
+        errors.append("editors.json: must be an array.")
 
     if errors:
         return errors
 
-    masjid_ids = _validate_id_list("masjids.json", masjids, errors)
-    speaker_ids = _validate_id_list("speakers.json", speakers, errors)
-    category_ids = _validate_id_list("categories.json", categories, errors)
+    masjid_records = _validate_id_list("masjids.json", masjids, errors)
+    speaker_ids = set(r.get("id") for r in _validate_id_list("speakers.json", speakers, errors))
+    category_ids = set(r.get("id") for r in _validate_id_list("categories.json", categories, errors))
+    district_records = _validate_id_list("districts.json", districts, errors)
+    editor_records = _validate_id_list("editors.json", editors, errors)
+
+    _validate_masjids(masjid_records, district_records, editor_records, errors)
+
+    masjid_ids = {m.get("id") for m in masjid_records}
 
     event_ids = set()
     for index, event in enumerate(events):

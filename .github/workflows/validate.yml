@@ -68,7 +68,7 @@ jobs:
           python3 - <<'PY'
           import json, pathlib, sys
           ok = True
-          for name in ("masjids", "events", "speakers", "categories", "settings"):
+          for name in ("masjids", "events", "speakers", "categories", "settings", "districts", "editors"):
               a = json.loads(pathlib.Path(f"data/{name}.json").read_text(encoding="utf-8"))
               b = json.loads(pathlib.Path(f"public/data/{name}.json").read_text(encoding="utf-8"))
               if a != b:

@@ -33,6 +33,12 @@ Endpoints (all JSON):
     POST   /api/categories              create category
     PUT    /api/categories/{id}         update category
     DELETE /api/categories/{id}         delete category (blocked if referenced)
+    POST   /api/districts               create district
+    PUT    /api/districts/{id}          update district
+    DELETE /api/districts/{id}          delete district (blocked if referenced)
+    POST   /api/editors                 create editor
+    PUT    /api/editors/{id}            update editor
+    DELETE /api/editors/{id}            delete editor (blocked if referenced)
 """
 
 import argparse
@@ -49,7 +55,8 @@ import build_site
 
 ROOT = Path(__file__).resolve().parent.parent
 
-DATA_FILES = ("masjids.json", "events.json", "speakers.json", "categories.json", "settings.json")
+DATA_FILES = ("masjids.json", "events.json", "speakers.json", "categories.json",
+              "settings.json", "districts.json", "editors.json")
 
 VALID_STATUSES = {"draft", "published", "cancelled", "postponed", "completed"}
 VALID_RECURRENCE_TYPES = {"weekly"}
@@ -139,12 +146,83 @@ def next_category_id(name, categories):
     return next_id(slugify(name, "lain"), [c.get("id") for c in categories])
 
 
+# Official Perlis districts. The name list mirrors data/districts.json (used to
+# derive a district_id from a free-text district without string-splitting).
+KNOWN_DISTRICTS = (
+    "Kangar", "Arau", "Padang Besar", "Pauh", "Beseri", "Chuping", "Bintong",
+    "Kurong Anai", "Kayang", "Mata Ayer", "Oran", "Sanglang", "Simpang Empat",
+    "Tambun Tulang", "Wang Bintong",
+)
+
+DISTRICT_ID_BY_NAME = {
+    str(d).strip().lower(): slugify(d) for d in KNOWN_DISTRICTS
+}
+
+
+def district_id_for(name):
+    """Best-effort district_id for a free-text district name (or None)."""
+    return DISTRICT_ID_BY_NAME.get(str(name or "").strip().lower())
+
+
+def district_display_name(district_id):
+    """Display name for a district_id (or None when unknown)."""
+    for name in KNOWN_DISTRICTS:
+        if slugify(name) == district_id:
+            return name
+    return None
+
+
+def validate_district(form):
+    errors = []
+    name = str(form.get("name", "")).strip()
+    if not name:
+        errors.append("District name is required.")
+    return {
+        "name": name,
+        "description": str(form.get("description", "")).strip(),
+    }, errors
+
+
+def validate_editor(form):
+    errors = []
+    name = str(form.get("name", "")).strip()
+    if not name:
+        errors.append("Editor name is required.")
+    email = str(form.get("email", "")).strip()
+    if email and "@" not in email:
+        errors.append("email must look like an email address.")
+    return {
+        "name": name,
+        "email": email,
+        "role": str(form.get("role", "")).strip() or "editor",
+        "description": str(form.get("description", "")).strip(),
+    }, errors
+
+
+def next_district_id(name, districts):
+    return next_id(slugify(name, "daerah"), [d.get("id") for d in districts])
+
+
+def next_editor_id(name, editors):
+    base = slugify(name, "editor")
+    base = base if base.startswith("editor-") else f"editor-{base}"
+    return next_id(base, [e.get("id") for e in editors])
+
+
 # ---------------------------------------------------------------------------
 # Record validation (field-level; referential integrity is re-checked by
 # validate_directory after every mutation, with rollback on failure).
 # ---------------------------------------------------------------------------
 
-def validate_masjid(form):
+def district_lookup_name(district_id, districts):
+    """Display name for a district_id, resolved against live districts.json."""
+    for d in districts or []:
+        if d.get("id") == district_id:
+            return str(d.get("name") or "").strip()
+    return None
+
+
+def validate_masjid(form, districts=None):
     errors = []
     name = str(form.get("name", "")).strip()
     if not name:
@@ -173,15 +251,31 @@ def validate_masjid(form):
     if website and not re.match(r"^https?://", website):
         errors.append("website must start with http:// or https://.")
 
+    district_id = str(form.get("district_id", "")).strip() or None
+    editor_id = str(form.get("editor_id", "")).strip() or None
+    district = str(form.get("district", "")).strip()
+    if district_id:
+        # keep the free-text display name consistent with the linked district
+        resolved = district_lookup_name(district_id, districts)
+        if resolved:
+            district = resolved
+        elif not district:
+            district = district_display_name(district_id) or ""
+    elif district:
+        # derive the district link from the free-text district when possible
+        district_id = district_id_for(district)
+
     return {
         "name": name,
-        "district": str(form.get("district", "")).strip(),
+        "district": district,
+        "district_id": district_id,
         "state": str(form.get("state", "")).strip() or "Perlis",
         "address": str(form.get("address", "")).strip(),
         "latitude": latitude,
         "longitude": longitude,
         "contact": str(form.get("contact", "")).strip(),
         "website": website,
+        "editor_id": editor_id,
     }, errors
 
 
@@ -316,6 +410,13 @@ class DataStore:
                         "recurrence_types": sorted(VALID_RECURRENCE_TYPES),
                         "weekdays": sorted(VALID_WEEKDAYS),
                     }
+                elif f == "districts.json":
+                    # fresh data dirs start with the official Perlis districts
+                    # so masjid district_id references resolve immediately.
+                    initial = [
+                        {"id": slugify(d), "name": d, "description": ""}
+                        for d in KNOWN_DISTRICTS
+                    ]
                 write_json(self.paths[f], initial)
 
     def read_all(self):
@@ -487,6 +588,10 @@ class Handler(BaseHTTPRequestHandler):
             return self._create_record(parsed, "speaker")
         if parts == ["api", "categories"]:
             return self._create_record(parsed, "category")
+        if parts == ["api", "districts"]:
+            return self._create_record(parsed, "district")
+        if parts == ["api", "editors"]:
+            return self._create_record(parsed, "editor")
 
         if len(parts) == 4 and parts[:2] == ["api", "events"] and parts[3] == "status":
             return self._set_event_status(parts[2], parsed)
@@ -517,6 +622,8 @@ class Handler(BaseHTTPRequestHandler):
             "masjids": "masjids.json",
             "speakers": "speakers.json",
             "categories": "categories.json",
+            "districts": "districts.json",
+            "editors": "editors.json",
         }.get(name)
 
     def _respond(self, ok, payload, ok_status, not_found=False, errors=None):
@@ -535,25 +642,35 @@ class Handler(BaseHTTPRequestHandler):
 
         def apply(all_data):
             if kind == "masjid":
-                rec, errors = validate_masjid(parsed)
+                rec, errors = validate_masjid(parsed, all_data["districts.json"])
             elif kind == "speaker":
                 rec, errors = validate_speaker(parsed)
             elif kind == "category":
                 rec, errors = validate_category(parsed)
             elif kind == "event":
                 rec, errors = validate_event(parsed)
+            elif kind == "district":
+                rec, errors = validate_district(parsed)
+            elif kind == "editor":
+                rec, errors = validate_editor(parsed)
             else:
                 raise ValueError("unknown type")
             if errors:
                 raise _ValidationError(errors)
             coll = all_data["masjids.json" if kind == "masjid" else "speakers.json" if kind == "speaker"
-                                else "categories.json" if kind == "category" else "events.json"]
+                                else "categories.json" if kind == "category" else "events.json"
+                                if kind == "event" else "districts.json" if kind == "district"
+                                else "editors.json"]
             if kind == "masjid":
                 rec = {"id": next_masjid_id(rec["name"], coll), **rec}
             elif kind == "speaker":
                 rec = {"id": next_speaker_id(rec["name"], coll), **rec}
             elif kind == "category":
                 rec = {"id": next_category_id(rec["name"], coll), **rec}
+            elif kind == "district":
+                rec = {"id": next_district_id(rec["name"], coll), **rec}
+            elif kind == "editor":
+                rec = {"id": next_editor_id(rec["name"], coll), **rec}
             else:
                 rec = {"id": next_event_id(rec["date"], coll), **rec}
             coll.append(rec)
@@ -581,7 +698,7 @@ class Handler(BaseHTTPRequestHandler):
             return self._send_json(400, {"errors": ["too many events (max 200)."]})
 
         def apply(all_data):
-            masjid, errors = validate_masjid(masjid_form)
+            masjid, errors = validate_masjid(masjid_form, all_data["districts.json"])
             if errors:
                 raise _ValidationError(errors)
             coll = all_data["masjids.json"]
@@ -643,11 +760,15 @@ class Handler(BaseHTTPRequestHandler):
             if idx is None:
                 raise _NotFound()
             if fname == "masjids.json":
-                rec, errors = validate_masjid(parsed)
+                rec, errors = validate_masjid(parsed, all_data["districts.json"])
             elif fname == "speakers.json":
                 rec, errors = validate_speaker(parsed)
             elif fname == "categories.json":
                 rec, errors = validate_category(parsed)
+            elif fname == "districts.json":
+                rec, errors = validate_district(parsed)
+            elif fname == "editors.json":
+                rec, errors = validate_editor(parsed)
             else:
                 rec, errors = validate_event(parsed)
             if errors:
@@ -693,19 +814,24 @@ class Handler(BaseHTTPRequestHandler):
 
         def apply(all_data):
             events = all_data["events.json"]
+            masjids = all_data["masjids.json"]
             if fname == "masjids.json":
-                field = "masjid_id"
+                field, refs_source = "masjid_id", events
             elif fname == "speakers.json":
-                field = "speaker_id"
+                field, refs_source = "speaker_id", events
             elif fname == "categories.json":
-                field = "category_id"
+                field, refs_source = "category_id", events
+            elif fname == "districts.json":
+                field, refs_source = "district_id", masjids
+            elif fname == "editors.json":
+                field, refs_source = "editor_id", masjids
             else:
-                field = None
+                field, refs_source = None, []
             if field:
-                refs = [e.get("id") for e in events if e.get(field) == record_id]
+                refs = [r.get("id") for r in refs_source if r.get(field) == record_id]
                 if refs:
                     raise _ValidationError([
-                        "cannot delete: still referenced by event(s): " + ", ".join(sorted(refs))])
+                        "cannot delete: still referenced by record(s): " + ", ".join(sorted(refs))])
             coll = all_data[fname]
             idx = next((i for i, r in enumerate(coll) if r.get("id") == record_id), None)
             if idx is None:

@@ -1,0 +1,77 @@
+[
+  {
+    "id": "kangar",
+    "name": "Kangar",
+    "description": "Ibu negeri Perlis dan daerah sekitarnya, termasuk bandar Kangar."
+  },
+  {
+    "id": "arau",
+    "name": "Arau",
+    "description": "Pusat pentadbiran diraja dan daerah Arau."
+  },
+  {
+    "id": "padang-besar",
+    "name": "Padang Besar",
+    "description": "Kawasan sempadan utara Perlis–Thailand."
+  },
+  {
+    "id": "pauh",
+    "name": "Pauh",
+    "description": "Kawasan utara berhampiran Kangar, termasuk Kampung Pauh."
+  },
+  {
+    "id": "beseri",
+    "name": "Beseri",
+    "description": "Daerah kecil di utara, termasuk Kuala Perlis."
+  },
+  {
+    "id": "chuping",
+    "name": "Chuping",
+    "description": "Kawasan ladang dan luar bandar di utara Perlis."
+  },
+  {
+    "id": "bintong",
+    "name": "Bintong",
+    "description": "Kawasan di selatan Arau."
+  },
+  {
+    "id": "kurong-anai",
+    "name": "Kurong Anai",
+    "description": "Kawasan kecil di bahagian tengah Perlis."
+  },
+  {
+    "id": "kayang",
+    "name": "Kayang",
+    "description": "Kawasan berdekatan sempadan Perlis–Kedah."
+  },
+  {
+    "id": "mata-ayer",
+    "name": "Mata Ayer",
+    "description": "Mukim di bahagian selatan Perlis."
+  },
+  {
+    "id": "oran",
+    "name": "Oran",
+    "description": "Mukim kecil di bahagian selatan Perlis."
+  },
+  {
+    "id": "sanglang",
+    "name": "Sanglang",
+    "description": "Kawasan pantai barat daya Perlis berhampiran laut."
+  },
+  {
+    "id": "simpang-empat",
+    "name": "Simpang Empat",
+    "description": "Pekan di selatan Perlis berhampiran sempadan Kedah."
+  },
+  {
+    "id": "tambun-tulang",
+    "name": "Tambun Tulang",
+    "description": "Mukim di sebelah timur Arau."
+  },
+  {
+    "id": "wang-bintong",
+    "name": "Wang Bintong",
+    "description": "Kawasan luar bandar di timur laut Perlis."
+  }
+]
