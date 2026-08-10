@@ -327,6 +327,15 @@ First admin implementation may be a local/data-management tool. Do NOT invent in
 
 Optional data source, implemented as an adapter (Importer -> Canonical JSON -> Validator -> Public site). Create `tools/import_google_sheet.py` or equivalent. Document sheet mappings, validate after import, report invalid rows, detect duplicate IDs, do not destroy existing data.
 
+### Acceptance
+- [x] Adapter shape: Google Sheets (published CSV) -> canonical JSON -> validator -> public site.
+- [x] `tools/import_google_sheet.py` exists; no API key / secret required (published-to-web CSV export).
+- [x] Sheet mappings documented (`SHEET_IMPORT.md` + `tools/sheets_import.example.json`).
+- [x] Validates the merged data set before writing; failure leaves local data untouched.
+- [x] Invalid rows reported with their sheet row number and skipped.
+- [x] Duplicate IDs detected within a sheet (and across the merge), reported.
+- [x] Existing data is never destroyed: only adds/updates by id, no pruning.
+
 ---
 
 # 19. Stage 15 — GitHub Actions Automation
@@ -1051,4 +1060,61 @@ Known issues:
 Next stage: Stage 14 — Google Sheets Adapter (Importer -> Canonical JSON ->
   Validator -> Public site; document mappings, validate after import, detect
   duplicate IDs, never destroy existing data).
+```
+
+---
+
+# Session Report — 2026-08-10 (15) — Stage 14 (Google Sheets Adapter)
+
+```text
+Current stage: Stage 14 (Google Sheets Adapter) — complete.
+Completed:
+  - tools/import_google_sheet.py: optional data-source adapter. Reads
+    published-to-web Google Sheets CSV exports (tab via gid) OR local CSV
+    files, normalizes rows into canonical JSON, merges into data/, then runs
+    the full validator on the merged set BEFORE writing.
+      * No API key / secret: uses the public CSV export URL
+        (.../export?format=csv&gid=GID); sheets only need File > Share >
+        Publish to web.
+      * Column mappings per source ("columns": header -> canonical field);
+        without them headers must equal canonical names. id_column optional;
+        ids are derived stably when absent (masjid/speaker/category from
+        name, event from date -> evt-{date}-{NNN}), never renumbered.
+      * Reference cells (masjid/speaker/category) accept an id OR the current
+        display name, resolved against the merged data.
+      * Add/update by id only; local records not in the sheet are kept (no
+        pruning). Duplicate ids within a sheet detected, later rows skipped.
+      * Invalid rows are reported with their sheet row number and skipped.
+      * On any merged-data validation failure the importer ABORTS and leaves
+        data/ byte-for-byte untouched. --dry-run validates only; --strict
+        aborts if any row was skipped; --spreadsheet-id/--config/--data-dir
+        overrides. Events support recurrence via rolled-up columns
+        (recurrence_type/days/start/end/exceptions).
+  - tools/sheets_import.example.json: full documented mapping (4 tabs, Malay
+    headers as in the example archive the repo ships).
+  - SHEET_IMPORT.md: guarantees, publish-to-web steps, config/source options,
+    per-tab column tables, CLI usage and exit codes.
+Tests:
+  - tests/test_import_sheet.py -> 4/4: happy add+update+keep+skip (new
+    masjid/speaker/category/event with generated ids, existing event updated,
+    existing records preserved, invalid date + unknown reference rows
+    skipped); duplicate explicit id + strict abort leaves files unchanged;
+    validation failure (patched validator) aborts without writing; --dry-run
+    modifies nothing. Runs against a throwaway copy of data/, never touches
+    the real data/.
+  - Existing suites still green: admin 6/6, validate 6/6,
+    build_site 14/14, JS events 37/37, masjids 12/12, share 12/12,
+    ics 21/21, maps 9/9; tools/validate_data.py -> OK on data/.
+Files changed:
+  - tools/import_google_sheet.py (new)
+  - tools/sheets_import.example.json (new)
+  - SHEET_IMPORT.md (new)
+  - tests/test_import_sheet.py (new)
+  - TODO_AGENT.md (Stage 14 acceptance checked, this report appended)
+Known issues:
+  - None blocking. Requires the source spreadsheet to be publicly shared /
+    published; that is by design (no secrets). Names in reference cells
+    resolve to the id of the first match; keep display names unique.
+Next stage: Stage 15 — GitHub Actions Automation (`validate.yml` + deploy
+  hardening; validation on PR/push/data changes, broken data blocks deploy).
 ```
