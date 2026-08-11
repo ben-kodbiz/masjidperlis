@@ -25,11 +25,11 @@ def test_audit_clean_on_committed_repo():
 
 def test_secret_patterns_catch_credentials():
     samples = [
-        "token=ghp_" + "A" * 30,
-        "x-api-key: REDACTED",
-        "-----BEGIN REDACTED KEY-----\nMIIE",
-        "stripe_token_redacted",
-        'client_secret = "REDACTED"',
+        "token=ghp_" + "A" * 30,  # ::gitleaks
+        "x-api-key: REDACTED",  # ::gitleaks
+        "-----BEGIN REDACTED KEY-----\nMIIE",  # ::gitleaks
+        "stripe_token_redacted",  # ::gitleaks
+        'client_secret = "REDACTED"',  # ::gitleaks
     ]
     for s in samples:
         assert sa.SECRET_RE.search(s) is not None, "not flagged: {!r}".format(s[:40])

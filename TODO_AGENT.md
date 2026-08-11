@@ -442,6 +442,15 @@ README covers purpose, architecture, local development, data format, deployment,
 
 Remove demo data, add real masjids, verify locations/times/timezone, test cancelled/recurring events, mobile/slow/no-JS, GitHub Pages, sharing links, sitemap, no credentials exposed.
 
+### Acceptance
+- [x] Demo data kept (user decision); demo masjids have real coordinates/addresses (Masjid Alwi, Al-Rahmah, An-Nur) so maps/directions/JSON-LD geo work.
+- [x] Locations/times/timezone: settings timezone `Asia/Kuala_Lumpur`; generated JSON-LD emits `+08:00` start/end with geo + address.
+- [x] Cancelled/recurring events: demo covers cancelled (evt-20260811-001), postponed (evt-20260818-001), and a weekly recurring event with exception (evt-20260812-001); rendered pages carry "dibatalkan"/"ditangguhkan" and correct recurrence + `.ics`.
+- [x] Mobile/slow/no-JS: a11y + perf suites green (touch targets, contrast, budgets ≈15 kB gzipped/page).
+- [ ] GitHub Pages live deployment — **pending user push + enabling Pages (Source: GitHub Actions)**.
+- [x] Sharing links, sitemap: share/ics/maps JS suites green; sitemap.xml has 14 URLs; robots.txt + sw.js generated.
+- [x] No credentials exposed: security audit clean (incl. fix of the tracked-test-fixture regression, see session report).
+
 ---
 
 # 27. Final Acceptance Test
@@ -1565,3 +1574,48 @@ Next stage: Stage 22 — Production Readiness (remove demo data, add real
   masjids, verify locations/times/timezone, cancelled/recurring events,
   mobile/slow/no-JS, GitHub Pages, sharing links, sitemap, no credentials
   exposed).
+
+---
+
+# Session Report — 2026-08-11 (24) — Stage 22
+
+```text
+Current stage: Stage 22 (Production Readiness) — in progress (live-only items pending).
+Decisions:
+  - User chose "keep demo data, you push to GitHub": real masjid data is
+    deferred to the maintainer; the demo set is verified production-shaped.
+Completed:
+  - Verified demo data is complete for a live smoke test: 3 masjids each have
+    real Perlis coordinates + addresses + district/editor links (fields are
+    latitude/longitude, not a geo object); 8 events incl. cancelled
+    (evt-20260811-001), postponed (evt-20260818-001), and a weekly recurring
+    event with an exception (evt-20260812-001, exceptions 2026-08-19).
+  - Full build: 8 event + 3 masjid no-JS pages, sitemap.xml (14 URLs),
+    robots.txt, sw.js. Cancelled -> "dibatalkan", postponed -> "ditangguhkan".
+    Recurring event page emits correct JSON-LD (EventScheduled, +08:00,
+    GeoCoordinates, address) + event.ics.
+  - All suites green: validate + 8/8 Python + node (a11y 4, events 37, ics 21,
+    maps 9, masjids 12, share 12) + perf budgets + security audit.
+Regression found & fixed:
+  - tools/security_audit.py scans git-tracked files. Once tests/test_security.py
+    was committed (Stage 20), its fake-credential fixtures (x-api-key, RSA key,
+    stripe_token_redacted, client_secret) started tripping the audit's own secret scan ->
+    SECURITY AUDIT FAILED (and CI would have failed too). Fixed by tagging the
+    fixture lines with the audit's existing inline-ignore annotation
+    (# ::gitleaks, security_audit.py scan_secrets line-skip). Audit now CLEAN,
+    test still 7/7 (patterns still catch the same samples).
+  - Note for the maintainer: run `python3 tools/security_audit.py` and the
+    suites in CI after the first push.
+Files changed:
+  - tests/test_security.py (fixture ignore annotations), TODO_AGENT.md
+Remaining (user action required):
+  1. Create the GitHub repo and push (git push -u origin master).
+  2. Settings -> Pages -> Source: GitHub Actions.
+  3. Confirm the "Deploy to GitHub Pages" run; open the Pages URL on phone +
+     desktop, verify home/today/upcoming/search/filters/event+masjid detail/
+     share/ics/maps/cancelled/recurring, no-JS and slow connections.
+  4. Then set data/settings.json -> site_url to the real base URL (canonicals
+     + sitemap become absolute) and, when going public, swap in real masjids.
+Next stage: Stage 22 completion depends on the live deployment; after the
+  pages URL is live, mark the remaining acceptance box, then run the
+  "Final Acceptance Test" checklist (next stage).
