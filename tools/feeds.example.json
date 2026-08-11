@@ -1,0 +1,32 @@
+{
+  "feeds": [
+    {
+      "name": "Cawangan Arau (fail JSON tempatan)",
+      "type": "local-json",
+      "path": "./cawangan-arau.json",
+      "collections": ["masjids", "events", "speakers"]
+    },
+    {
+      "name": "Portal acara (JSON URL)",
+      "type": "json-url",
+      "url": "https://example.org/agregat/acara.json",
+      "collections": ["events"],
+      "timeout": 30
+    },
+    {
+      "name": "API REST daerah",
+      "type": "rest",
+      "url": "https://api.example.org/v1/events",
+      "headers": {
+        "Authorization": "Bearer ${FEED_API_TOKEN}"
+      },
+      "collections": ["events"]
+    },
+    {
+      "name": "Kuasa atas (cawangan) — rujukan silang",
+      "type": "local-json",
+      "path": "./kuasa-atas.json",
+      "collections": ["events"]
+    }
+  ]
+}

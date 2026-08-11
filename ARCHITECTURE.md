@@ -179,13 +179,17 @@ The browser performs local filtering/search against the downloaded dataset.
 # 6. Public Data Flow
 
 ```text
-Source
+Sources (multiple, optional)
+  |
+  +-- JSON URL / REST endpoint   (tools/federate.py "json-url"/"rest")
+  +-- Git-repo workspace JSON    (tools/federate.py "local-json")
+  +-- Google Sheets / CSV export (tools/import_google_sheet.py,
+  |                               tools/federate.py "google-sheet")
+  v
+Federation / import (add + update by id, never prune)
   |
   v
-Importer
-  |
-  v
-Validation
+Validation (full merged set before any write)
   |
   v
 Normalization
@@ -203,7 +207,7 @@ GitHub Pages
 Browser
 ```
 
-The public browser must never need direct access to administrative credentials.
+The public browser must never need direct access to administrative credentials. See `FEDERATION.md` for the multi-feed tool and `SHEET_IMPORT.md` for the single-sheet adapter; both share the validate-then-write gate.
 
 # 7. Admin Architecture
 
@@ -683,7 +687,10 @@ The ideal end-state is an **open publishing system for masjid events**, not mere
           ADD AUTOMATION
                   |
                   v
-          ADD FEDERATION
+          FEDERATE FEEDS (done)
+                  |
+                  v
+          ACCESSIBILITY / PERFORMANCE / SECURITY / DOCS
 ```
 
-Never start with infrastructure. Start with the data model and the user experience. The public site should remain the simplest component of the entire system.
+Never start with infrastructure. Start with the data model and the user experience. The public site should remain the simplest component of the entire system. Until a real multi-source requirement exists, `tools/federate.py` (see `FEDERATION.md`) aggregates JSON / REST / Google-Sheet feeds into the canonical model; every source goes through the same validate-then-write gate.
