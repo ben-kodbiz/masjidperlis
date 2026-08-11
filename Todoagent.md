@@ -508,7 +508,7 @@ Create:
 Each masjid should display:
 
 * [ ] name
-* [ ] district
+* [ ] mukim
 * [ ] address
 * [ ] location
 * [ ] upcoming events
@@ -544,7 +544,7 @@ Filters:
 
 ```text
 Masjid
-District
+Mukim
 Category
 Date
 Status
@@ -957,7 +957,7 @@ Potential model:
 ```text
 State
   |
-District
+Mukim
   |
 Masjid
   |
@@ -1667,7 +1667,7 @@ Example:
 {
   "id": "masjid-alwi",
   "name": "Masjid Alwi",
-  "district": "Kangar",
+  "mukim": "Kangar",
   "state": "Perlis",
   "address": "",
   "latitude": 6.44,

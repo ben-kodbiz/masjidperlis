@@ -18,7 +18,7 @@
           <li><a href="masjids.html" data-page="masjids">Masjid</a></li>
           <li><a href="speakers.html" data-page="speakers">Penceramah</a></li>
           <li><a href="categories.html" data-page="categories">Kategori</a></li>
-          <li><a href="districts.html" data-page="districts">Daerah</a></li>
+          <li><a href="mukims.html" data-page="mukims">Mukim</a></li>
           <li><a href="editors.html" data-page="editors">Editor</a></li>
         </ul>
       </nav>
@@ -34,7 +34,7 @@
       <div class="stat"><div class="num" id="n-masjids">…</div><div class="lbl">Masjid</div></div>
       <div class="stat"><div class="num" id="n-speakers">…</div><div class="lbl">Penceramah</div></div>
       <div class="stat"><div class="num" id="n-categories">…</div><div class="lbl">Kategori</div></div>
-      <div class="stat"><div class="num" id="n-districts">…</div><div class="lbl">Daerah</div></div>
+      <div class="stat"><div class="num" id="n-mukims">…</div><div class="lbl">Mukim</div></div>
       <div class="stat"><div class="num" id="n-editors">…</div><div class="lbl">Editor</div></div>
     </div>
 
@@ -47,7 +47,7 @@
         <a class="btn btn-ghost" href="masjids.html">+ Masjid baru</a>
         <a class="btn btn-ghost" href="speakers.html">+ Penceramah baru</a>
         <a class="btn btn-ghost" href="categories.html">+ Kategori baru</a>
-        <a class="btn btn-ghost" href="districts.html">+ Daerah baru</a>
+        <a class="btn btn-ghost" href="mukims.html">+ Mukim baru</a>
         <a class="btn btn-ghost" href="editors.html">+ Editor baru</a>
         <a class="btn btn-ghost" href="add-masjid.html">Tambah masjid + jadual (borang lama)</a>
       </div>
@@ -87,7 +87,7 @@
         document.getElementById("n-masjids").textContent = (data.masjids || []).length;
         document.getElementById("n-speakers").textContent = (data.speakers || []).length;
         document.getElementById("n-categories").textContent = (data.categories || []).length;
-        document.getElementById("n-districts").textContent = (data.districts || []).length;
+        document.getElementById("n-mukims").textContent = (data.mukims || []).length;
         document.getElementById("n-editors").textContent = (data.editors || []).length;
       }
 

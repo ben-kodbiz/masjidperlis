@@ -44,9 +44,9 @@ function assert(cond, msg) {
 }
 
 const masjids = [
-  { id: "m1", name: "Masjid Alwi", district: "Kangar" },
-  { id: "m2", name: "Masjid An-Nur", district: "Kangar" },
-  { id: "m3", name: "Masjid A-Rahmah", district: "Arau" }
+  { id: "m1", name: "Masjid Alwi", mukim: "Kangar" },
+  { id: "m2", name: "Masjid An-Nur", mukim: "Kangar" },
+  { id: "m3", name: "Masjid A-Rahmah", mukim: "Arau" }
 ];
 
 ME.masjids.init({ masjids: masjids });
@@ -76,13 +76,13 @@ assert(featNone.length === 2 && featNone[0].id === "m1", "featured falls back to
 // featured limit is honoured
 assert(ME.masjids.featured(events, 1).length === 1, "featured respects limit");
 
-// --- Stage 6: directory search + district filter ---
+// --- Stage 6: directory search + mukim filter ---
 const byName = ME.masjids.filterMasjids("alwi");
 assert(byName.length === 1 && byName[0].id === "m1", "search finds by name");
 
-const byDistrict = ME.masjids.filterMasjids("", { district: "Kangar" });
-assert(byDistrict.length === 2 && byDistrict.every(function (m) { return m.district === "Kangar"; }),
-  "district filter returns only Kangar masjids");
+const byMukim = ME.masjids.filterMasjids("", { mukim: "Kangar" });
+assert(byMukim.length === 2 && byMukim.every(function (m) { return m.mukim === "Kangar"; }),
+  "mukim filter returns only Kangar masjids");
 
 const byId = ME.masjids.filterMasjids("m3");
 assert(byId.length === 1 && byId[0].id === "m3", "search finds by id");
@@ -90,9 +90,9 @@ assert(byId.length === 1 && byId[0].id === "m3", "search finds by id");
 const none = ME.masjids.filterMasjids("tidak-wujud");
 assert(none.length === 0, "no matches returns empty array");
 
-const ds = ME.masjids.districts();
+const ds = ME.masjids.mukims();
 assert(ds.length === 2 && ds[0] === "Arau" && ds[1] === "Kangar",
-  "districts() returns sorted distinct values");
+  "mukims() returns sorted distinct values");
 
 console.log("\nmasjids module tests:\n" + passed + " passed, " + failed + " failed");
 process.exit(failed ? 1 : 0);

@@ -32,7 +32,7 @@
 
   function masjidCard(masjid, upcomingCount) {
     const lines = [];
-    if (masjid.district) lines.push(masjid.district);
+    if (masjid.mukim) lines.push(masjid.mukim);
     if (masjid.state) lines.push(masjid.state);
     const kids = [
       ui.el("h3", {}, [masjid.name]),
@@ -50,27 +50,27 @@
     }, kids);
   }
 
-  // Search + filter for the directory page. q matches name/district/address;
-  // district and optional hasEvents restrict the set.
+  // Search + filter for the directory page. q matches name/mukim/address;
+  // mukim and optional hasEvents restrict the set.
   function filterMasjids(q, opts) {
     opts = opts || {};
     q = (q || "").trim().toLowerCase();
     return list.filter(function (m) {
-      if (opts.district && m.district !== opts.district) return false;
+      if (opts.mukim && m.mukim !== opts.mukim) return false;
       if (opts.masjid_id && m.id !== opts.masjid_id) return false;
       if (q) {
-        const hay = [m.id, m.name, m.district, m.state, m.address].join(" ").toLowerCase();
+        const hay = [m.id, m.name, m.mukim, m.state, m.address].join(" ").toLowerCase();
         if (hay.indexOf(q) === -1) return false;
       }
       return true;
     });
   }
 
-  // Distinct district values, sorted alphabetically (for a filter dropdown).
-  function districts() {
+  // Distinct mukim values, sorted alphabetically (for a filter dropdown).
+  function mukims() {
     const out = [];
     list.forEach(function (m) {
-      if (m.district && out.indexOf(m.district) === -1) out.push(m.district);
+      if (m.mukim && out.indexOf(m.mukim) === -1) out.push(m.mukim);
     });
     return out.sort();
   }
@@ -79,7 +79,7 @@
     container.textContent = "";
     if (!masjids.length) {
       container.appendChild(ui.el("p", { class: "empty-state" }, [
-        "Tiada masjid ditemui. Cuba ubah carian atau penapis daerah."
+        "Tiada masjid ditemui. Cuba ubah carian atau penapis mukim."
       ]));
       return;
     }
@@ -97,7 +97,7 @@
     featured: featured,
     card: masjidCard,
     filterMasjids: filterMasjids,
-    districts: districts,
+    mukims: mukims,
     renderGrid: renderGrid
   };
 })();

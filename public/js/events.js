@@ -144,9 +144,9 @@
     return events.filter(function (ev) {
       if (!isVisible(ev)) return false;
       if (opts.masjid && ev.masjid_id !== opts.masjid) return false;
-      if (opts.district) {
+      if (opts.mukim) {
         if (ME.masjids && ME.masjids.get(ev.masjid_id) &&
-            ME.masjids.get(ev.masjid_id).district !== opts.district) return false;
+            ME.masjids.get(ev.masjid_id).mukim !== opts.mukim) return false;
       }
       if (opts.category && ev.category_id !== opts.category) return false;
       if (opts.status && ev.status !== opts.status) return false;

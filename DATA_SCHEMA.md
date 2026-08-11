@@ -12,7 +12,7 @@ data/
 ├── masjids.json
 ├── speakers.json
 ├── categories.json
-├── districts.json
+├── mukims.json
 ├── editors.json
 └── settings.json
 ```
@@ -136,8 +136,8 @@ An array of masjid objects.
 | ------------ | ------ | -------- | ------------------------------------ |
 | `id`         | string | yes      | unique, stable, URL-safe             |
 | `name`       | string | yes      | display name                         |
-| `district`   | string | no       | free-text display value, e.g. `Kangar`; when `district_id` is set it must match that district's name |
-| `district_id`| string | yes      | must reference `districts.json`      |
+| `mukim`   | string | no       | free-text display value, e.g. `Kangar`; when `mukim_id` is set it must match that mukim's name |
+| `mukim_id`| string | yes      | must reference `mukims.json`      |
 | `editor_id`  | string | no       | must reference `editors.json`        |
 | `state`      | string | no       | e.g. `Perlis`                        |
 | `address`    | string | no       | free-text address                    |
@@ -152,8 +152,8 @@ An array of masjid objects.
 {
   "id": "masjid-alwi",
   "name": "Masjid Alwi",
-  "district": "Kangar",
-  "district_id": "kangar",
+  "mukim": "Kangar",
+  "mukim_id": "kangar",
   "editor_id": "editor-pengurusan",
   "state": "Perlis",
   "address": "Jalan Tuanku Syed Putra, 01000 Kangar, Perlis",
@@ -164,15 +164,15 @@ An array of masjid objects.
 }
 ```
 
-The ID must remain stable even if the display name changes. `district` is a
-display convenience: `district_id` is the canonical link, and the two must not
+The ID must remain stable even if the display name changes. `mukim` is a
+display convenience: `mukim_id` is the canonical link, and the two must not
 disagree.
 
 ---
 
-## 4. Districts (`data/districts.json`)
+## 4. Mukims (`data/mukims.json`)
 
-An array of district objects (the districts of Perlis).
+An array of mukim objects (the mukims of Perlis).
 
 | Field         | Type   | Required | Notes             |
 | ------------- | ------ | -------- | ----------------- |
@@ -186,12 +186,12 @@ An array of district objects (the districts of Perlis).
 {
   "id": "kangar",
   "name": "Kangar",
-  "description": "Ibu negeri Perlis dan daerah sekitarnya."
+  "description": "Ibu negeri Perlis dan mukim sekitarnya."
 }
 ```
 
 Fresh data dirs (new `serve.py` setups) are seeded with the official Perlis
-districts; the list is then maintained via the admin tool.
+mukims; the list is then maintained via the admin tool.
 
 ---
 
@@ -296,7 +296,7 @@ Required in every record:
 
 ```text
 event:    id, title, masjid_id, date, start_time, status
-masjid:   id, name, district_id
+masjid:   id, name, mukim_id
 speaker:  id, name
 category: id, name
 ```
@@ -310,9 +310,9 @@ Everything else is optional.
 * Every `event.masjid_id` must exist in `masjids.json`.
 * Every `event.speaker_id` must exist in `speakers.json` (unless null/absent).
 * Every `event.category_id` must exist in `categories.json`.
-* Every `masjid.district_id` must exist in `districts.json`.
+* Every `masjid.mukim_id` must exist in `mukims.json`.
 * Every `masjid.editor_id` must exist in `editors.json` (unless null/absent).
-* If both `masjid.district` and `masjid.district_id` are present they must agree.
+* If both `masjid.mukim` and `masjid.mukim_id` are present they must agree.
 * IDs must not be duplicated within their own file.
 
 ---

@@ -5,7 +5,7 @@ Validates all data files in the canonical data set:
 
     data/masjids.json     data/events.json
     data/speakers.json    data/categories.json    data/settings.json
-    data/districts.json   data/editors.json
+    data/mukims.json   data/editors.json
 
 Checks performed (see DATA_SCHEMA.md):
     - malformed JSON
@@ -14,7 +14,7 @@ Checks performed (see DATA_SCHEMA.md):
     - invalid dates and times
     - invalid event status
     - unknown masjid / speaker / category references
-    - unknown district / editor references (masjids)
+    - unknown mukim / editor references (masjids)
     - invalid recurring-event configuration
     - obviously invalid event ranges (end_time not later than start_time)
 
@@ -42,7 +42,7 @@ ID_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 DEFAULT_DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 
 FIXED_FILES = ("masjids.json", "events.json", "speakers.json", "categories.json",
-               "settings.json", "districts.json", "editors.json")
+               "settings.json", "mukims.json", "editors.json")
 
 REQUIRED_EVENT = ("id", "title", "masjid_id", "date", "start_time", "status")
 REQUIRED_ID_NAME = ("id", "name")
@@ -128,10 +128,10 @@ def _validate_id_list(filename, items, errors, require_name=True):
     return records
 
 
-def _validate_masjids(masjids, districts, editors, errors):
-    """Check masjid -> district / editor references and district consistency."""
-    district_ids = {d.get("id") for d in districts}
-    district_names = {str(d.get("name") or "").strip().lower() for d in districts}
+def _validate_masjids(masjids, mukims, editors, errors):
+    """Check masjid -> mukim / editor references and mukim consistency."""
+    mukim_ids = {d.get("id") for d in mukims}
+    mukim_names = {str(d.get("name") or "").strip().lower() for d in mukims}
     editor_ids = {e.get("id") for e in editors}
 
     for index, masjid in enumerate(masjids):
@@ -142,23 +142,23 @@ def _validate_masjids(masjids, districts, editors, errors):
         if isinstance(eid, str) and eid:
             label = f"masjid {eid!r}"
 
-        did = str(masjid.get("district_id") or "").strip()
+        did = str(masjid.get("mukim_id") or "").strip()
         if not did:
-            errors.append(f"{label}: missing required field 'district_id'.")
-        elif did not in district_ids:
-            errors.append(f"{label}: unknown district_id {did!r}.")
+            errors.append(f"{label}: missing required field 'mukim_id'.")
+        elif did not in mukim_ids:
+            errors.append(f"{label}: unknown mukim_id {did!r}.")
 
-        # Free-text 'district' should match the selected district's name so the
-        # public filter list and the linked district stay consistent.
-        district_name = str(masjid.get("district") or "").strip()
-        if did in district_ids and district_name:
+        # Free-text 'mukim' should match the selected mukim's name so the
+        # public filter list and the linked mukim stay consistent.
+        mukim_name = str(masjid.get("mukim") or "").strip()
+        if did in mukim_ids and mukim_name:
             matching = str(
-                next((d.get("name") for d in districts if d.get("id") == did), "")
+                next((d.get("name") for d in mukims if d.get("id") == did), "")
             ).strip()
-            if district_name.strip().lower() != matching.lower():
+            if mukim_name.strip().lower() != matching.lower():
                 errors.append(
-                    f"{label}: district {district_name!r} does not match the "
-                    f"name of district_id {did!r} ({matching!r})."
+                    f"{label}: mukim {mukim_name!r} does not match the "
+                    f"name of mukim_id {did!r} ({matching!r})."
                 )
 
         editor_id = str(masjid.get("editor_id") or "").strip()
@@ -232,7 +232,7 @@ def validate_directory(data_dir):
     speakers = parsed["speakers.json"]
     categories = parsed["categories.json"]
     settings = parsed["settings.json"]
-    districts = parsed["districts.json"]
+    mukims = parsed["mukims.json"]
     editors = parsed["editors.json"]
 
     if not isinstance(masjids, list):
@@ -245,8 +245,8 @@ def validate_directory(data_dir):
         errors.append("categories.json: must be an array.")
     if not isinstance(settings, dict):
         errors.append("settings.json: must be an object.")
-    if not isinstance(districts, list):
-        errors.append("districts.json: must be an array.")
+    if not isinstance(mukims, list):
+        errors.append("mukims.json: must be an array.")
     if not isinstance(editors, list):
         errors.append("editors.json: must be an array.")
 
@@ -256,10 +256,10 @@ def validate_directory(data_dir):
     masjid_records = _validate_id_list("masjids.json", masjids, errors)
     speaker_ids = set(r.get("id") for r in _validate_id_list("speakers.json", speakers, errors))
     category_ids = set(r.get("id") for r in _validate_id_list("categories.json", categories, errors))
-    district_records = _validate_id_list("districts.json", districts, errors)
+    mukim_records = _validate_id_list("mukims.json", mukims, errors)
     editor_records = _validate_id_list("editors.json", editors, errors)
 
-    _validate_masjids(masjid_records, district_records, editor_records, errors)
+    _validate_masjids(masjid_records, mukim_records, editor_records, errors)
 
     masjid_ids = {m.get("id") for m in masjid_records}
 

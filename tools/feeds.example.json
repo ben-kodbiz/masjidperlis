@@ -14,7 +14,7 @@
       "timeout": 30
     },
     {
-      "name": "API REST daerah",
+      "name": "API REST mukim",
       "type": "rest",
       "url": "https://api.example.org/v1/events",
       "headers": {

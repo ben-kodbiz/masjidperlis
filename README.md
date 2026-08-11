@@ -67,7 +67,7 @@ python3 tools/serve.py
 ```
 
 The panel manages masjids, events (create / edit / cancel / postpone / archive /
-publish), speakers, categories, districts and editors; supports weekly recurring
+publish), speakers, categories, mukims and editors; supports weekly recurring
 events with exceptions; previews the public rendering; and validates every
 change, rolling back if the data would become invalid. Use "Semak data" then
 "Terbitkan (salin ke public/data)" to refresh the public mirror after edits —

@@ -43,7 +43,7 @@ When present, they are processed in this order:
 3. **Masjid** (masjids)
 4. **Acara** (events) — may reference the three above by **id or name**
 
-Districts and editors are **not** imported from sheets — manage those via the
+Mukims and editors are **not** imported from sheets — manage those via the
 admin panel or by editing the JSON directly.
 
 ---
@@ -222,14 +222,14 @@ has several tabs, the first is read unless a `"sheet"` name is configured.
 
 ### Masjids (masjids)
 
-| `id` | `Nama` | `Daerah` | `Negeri` | `Alamat` | `Latitud` | `Longitud` | `Kenalan` | `Laman web` |
+| `id` | `Nama` | `Mukim` | `Negeri` | `Alamat` | `Latitud` | `Longitud` | `Kenalan` | `Laman web` |
 | ---- | ------ | -------- | -------- | -------- | --------- | ---------- | --------- | ----------- |
 | *(blank)* | Masjid Alwi | Kangar | Perlis | Jalan Tuanku Syed Putra, 01000 Kangar | 6.4405 | 100.1952 | | |
 
-- `Daerah` accepts any of the 15 Perlis district names (Kangar, Arau, Padang
+- `Mukim` accepts any of the 15 Perlis mukim names (Kangar, Arau, Padang
   Besar, Pauh, Beseri, Chuping, Bintong, Kurong Anai, Kayang, Mata Ayer,
   Oran, Sanglang, Simpang Empat, Tambun Tulang, Wang Bintong) — the
-  `district_id` is linked automatically.
+  `mukim_id` is linked automatically.
 - `Latitud` / `Longitud` are decimal degrees (needed for maps/directions).
 
 ### Acara (events)
@@ -313,9 +313,9 @@ performance budgets, and publishes. Within a minute or two your live site at
 | `cannot fetch ... HTTP 400` | The sheet isn't published to the web, or the gid is wrong. Re-publish and double-check the gid. |
 | `no spreadsheet_id configured` | Set `spreadsheet_id` or use `"file"` + `--config`. |
 | `config has no source for: categories, speakers` | Outdated error — sources are now optional; a missing source is kept unchanged. Re-pull the latest code. |
-| `ABORTED — merged data is invalid` | Read the listed problems (bad date, missing masjid, unknown district…), fix the rows, re-run. |
+| `ABORTED — merged data is invalid` | Read the listed problems (bad date, missing masjid, unknown mukim…), fix the rows, re-run. |
 | Row skipped: `unknown masjid` | The masjid name/id isn't in the Masjids tab (or is misspelled). |
 | `Invalid UTF-8` / mojibake in names | Re-save the CSV as **UTF-8** (see section 4). |
 | `.xlsx` reads the wrong tab | Set `"sheet": "TabName"` on that source to pick a worksheet (default: first tab). |
 | Site not updating after push | Check the Actions tab — the deploy workflow (not just validate) must finish green. |
-| Wrong district link | `Daerah` must be one of the 15 official Perlis names; use the Malay name exactly. |
+| Wrong mukim link | `Mukim` must be one of the 15 official Perlis names; use the Malay name exactly. |

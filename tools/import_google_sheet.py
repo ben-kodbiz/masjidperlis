@@ -37,7 +37,7 @@ Config (default: tools/sheets_import.json, else the .example.json):
       "spreadsheet_id": "1AbCdE...",      # optional override on the CLI
       "sources": {
         "masjids":    { "tab": "Masjids",    "gid": "0",
-                        "columns": {"Nama": "name", "Daerah": "district"} },
+                        "columns": {"Nama": "name", "Mukim": "mukim"} },
         "speakers":   { "tab": "Penceramah" },
         "categories": { "tab": "Kategori" },
         "events":     { "tab": "Acara" }
@@ -84,7 +84,7 @@ from serve import (  # noqa: E402  (reuse the admin editor's normalization)
     VALID_RECURRENCE_TYPES,
     VALID_STATUSES,
     VALID_WEEKDAYS,
-    district_id_for,
+    mukim_id_for,
     next_category_id,
     next_event_id,
     next_masjid_id,
@@ -97,7 +97,7 @@ from serve import (  # noqa: E402  (reuse the admin editor's normalization)
 from validate_data import validate_directory  # noqa: E402
 
 DATA_FILES = ("masjids.json", "events.json", "speakers.json", "categories.json",
-              "settings.json", "districts.json", "editors.json")
+              "settings.json", "mukims.json", "editors.json")
 KINDS = ("categories", "speakers", "masjids", "events")
 ORDER_OF_KINDS = ("categories", "speakers", "masjids", "events")
 
@@ -509,9 +509,9 @@ class Importer:
         if errors:
             raise _RowError("; ".join(errors))
         if kind == "masjids":
-            # derive district_id from the free-text district so imported
-            # masjids link to data/districts.json automatically.
-            rec["district_id"] = district_id_for(rec.get("district"))
+            # derive mukim_id from the free-text mukim so imported
+            # masjids link to data/mukims.json automatically.
+            rec["mukim_id"] = mukim_id_for(rec.get("mukim"))
         return {"id": _id, **rec}
 
     def _normalize_events(self, existing, merged, skipped):
@@ -607,7 +607,7 @@ class Importer:
 
         merged, skipped = self.normalize(existing)
         # settings and reference collections pass through untouched
-        for fname in ("settings.json", "districts.json", "editors.json"):
+        for fname in ("settings.json", "mukims.json", "editors.json"):
             merged[fname] = existing[fname]
 
         # validate the merged set against a throwaway copy (never touch data/)

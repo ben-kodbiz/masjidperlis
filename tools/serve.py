@@ -33,9 +33,9 @@ Endpoints (all JSON):
     POST   /api/categories              create category
     PUT    /api/categories/{id}         update category
     DELETE /api/categories/{id}         delete category (blocked if referenced)
-    POST   /api/districts               create district
-    PUT    /api/districts/{id}          update district
-    DELETE /api/districts/{id}          delete district (blocked if referenced)
+    POST   /api/mukims               create mukim
+    PUT    /api/mukims/{id}          update mukim
+    DELETE /api/mukims/{id}          delete mukim (blocked if referenced)
     POST   /api/editors                 create editor
     PUT    /api/editors/{id}            update editor
     DELETE /api/editors/{id}            delete editor (blocked if referenced)
@@ -56,7 +56,7 @@ import build_site
 ROOT = Path(__file__).resolve().parent.parent
 
 DATA_FILES = ("masjids.json", "events.json", "speakers.json", "categories.json",
-              "settings.json", "districts.json", "editors.json")
+              "settings.json", "mukims.json", "editors.json")
 
 VALID_STATUSES = {"draft", "published", "cancelled", "postponed", "completed"}
 VALID_RECURRENCE_TYPES = {"weekly"}
@@ -146,37 +146,37 @@ def next_category_id(name, categories):
     return next_id(slugify(name, "lain"), [c.get("id") for c in categories])
 
 
-# Official Perlis districts. The name list mirrors data/districts.json (used to
-# derive a district_id from a free-text district without string-splitting).
-KNOWN_DISTRICTS = (
+# Official Perlis mukims. The name list mirrors data/mukims.json (used to
+# derive a mukim_id from a free-text mukim without string-splitting).
+KNOWN_MUKIMS = (
     "Kangar", "Arau", "Padang Besar", "Pauh", "Beseri", "Chuping", "Bintong",
     "Kurong Anai", "Kayang", "Mata Ayer", "Oran", "Sanglang", "Simpang Empat",
     "Tambun Tulang", "Wang Bintong",
 )
 
-DISTRICT_ID_BY_NAME = {
-    str(d).strip().lower(): slugify(d) for d in KNOWN_DISTRICTS
+MUKIM_ID_BY_NAME = {
+    str(d).strip().lower(): slugify(d) for d in KNOWN_MUKIMS
 }
 
 
-def district_id_for(name):
-    """Best-effort district_id for a free-text district name (or None)."""
-    return DISTRICT_ID_BY_NAME.get(str(name or "").strip().lower())
+def mukim_id_for(name):
+    """Best-effort mukim_id for a free-text mukim name (or None)."""
+    return MUKIM_ID_BY_NAME.get(str(name or "").strip().lower())
 
 
-def district_display_name(district_id):
-    """Display name for a district_id (or None when unknown)."""
-    for name in KNOWN_DISTRICTS:
-        if slugify(name) == district_id:
+def mukim_display_name(mukim_id):
+    """Display name for a mukim_id (or None when unknown)."""
+    for name in KNOWN_MUKIMS:
+        if slugify(name) == mukim_id:
             return name
     return None
 
 
-def validate_district(form):
+def validate_mukim(form):
     errors = []
     name = str(form.get("name", "")).strip()
     if not name:
-        errors.append("District name is required.")
+        errors.append("Mukim name is required.")
     return {
         "name": name,
         "description": str(form.get("description", "")).strip(),
@@ -199,8 +199,8 @@ def validate_editor(form):
     }, errors
 
 
-def next_district_id(name, districts):
-    return next_id(slugify(name, "daerah"), [d.get("id") for d in districts])
+def next_mukim_id(name, mukims):
+    return next_id(slugify(name, "mukim"), [d.get("id") for d in mukims])
 
 
 def next_editor_id(name, editors):
@@ -214,15 +214,15 @@ def next_editor_id(name, editors):
 # validate_directory after every mutation, with rollback on failure).
 # ---------------------------------------------------------------------------
 
-def district_lookup_name(district_id, districts):
-    """Display name for a district_id, resolved against live districts.json."""
-    for d in districts or []:
-        if d.get("id") == district_id:
+def mukim_lookup_name(mukim_id, mukims):
+    """Display name for a mukim_id, resolved against live mukims.json."""
+    for d in mukims or []:
+        if d.get("id") == mukim_id:
             return str(d.get("name") or "").strip()
     return None
 
 
-def validate_masjid(form, districts=None):
+def validate_masjid(form, mukims=None):
     errors = []
     name = str(form.get("name", "")).strip()
     if not name:
@@ -251,24 +251,24 @@ def validate_masjid(form, districts=None):
     if website and not re.match(r"^https?://", website):
         errors.append("website must start with http:// or https://.")
 
-    district_id = str(form.get("district_id", "")).strip() or None
+    mukim_id = str(form.get("mukim_id", "")).strip() or None
     editor_id = str(form.get("editor_id", "")).strip() or None
-    district = str(form.get("district", "")).strip()
-    if district_id:
-        # keep the free-text display name consistent with the linked district
-        resolved = district_lookup_name(district_id, districts)
+    mukim = str(form.get("mukim", "")).strip()
+    if mukim_id:
+        # keep the free-text display name consistent with the linked mukim
+        resolved = mukim_lookup_name(mukim_id, mukims)
         if resolved:
-            district = resolved
-        elif not district:
-            district = district_display_name(district_id) or ""
-    elif district:
-        # derive the district link from the free-text district when possible
-        district_id = district_id_for(district)
+            mukim = resolved
+        elif not mukim:
+            mukim = mukim_display_name(mukim_id) or ""
+    elif mukim:
+        # derive the mukim link from the free-text mukim when possible
+        mukim_id = mukim_id_for(mukim)
 
     return {
         "name": name,
-        "district": district,
-        "district_id": district_id,
+        "mukim": mukim,
+        "mukim_id": mukim_id,
         "state": str(form.get("state", "")).strip() or "Perlis",
         "address": str(form.get("address", "")).strip(),
         "latitude": latitude,
@@ -410,12 +410,12 @@ class DataStore:
                         "recurrence_types": sorted(VALID_RECURRENCE_TYPES),
                         "weekdays": sorted(VALID_WEEKDAYS),
                     }
-                elif f == "districts.json":
-                    # fresh data dirs start with the official Perlis districts
-                    # so masjid district_id references resolve immediately.
+                elif f == "mukims.json":
+                    # fresh data dirs start with the official Perlis mukims
+                    # so masjid mukim_id references resolve immediately.
                     initial = [
                         {"id": slugify(d), "name": d, "description": ""}
-                        for d in KNOWN_DISTRICTS
+                        for d in KNOWN_MUKIMS
                     ]
                 write_json(self.paths[f], initial)
 
@@ -588,8 +588,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._create_record(parsed, "speaker")
         if parts == ["api", "categories"]:
             return self._create_record(parsed, "category")
-        if parts == ["api", "districts"]:
-            return self._create_record(parsed, "district")
+        if parts == ["api", "mukims"]:
+            return self._create_record(parsed, "mukim")
         if parts == ["api", "editors"]:
             return self._create_record(parsed, "editor")
 
@@ -622,7 +622,7 @@ class Handler(BaseHTTPRequestHandler):
             "masjids": "masjids.json",
             "speakers": "speakers.json",
             "categories": "categories.json",
-            "districts": "districts.json",
+            "mukims": "mukims.json",
             "editors": "editors.json",
         }.get(name)
 
@@ -642,15 +642,15 @@ class Handler(BaseHTTPRequestHandler):
 
         def apply(all_data):
             if kind == "masjid":
-                rec, errors = validate_masjid(parsed, all_data["districts.json"])
+                rec, errors = validate_masjid(parsed, all_data["mukims.json"])
             elif kind == "speaker":
                 rec, errors = validate_speaker(parsed)
             elif kind == "category":
                 rec, errors = validate_category(parsed)
             elif kind == "event":
                 rec, errors = validate_event(parsed)
-            elif kind == "district":
-                rec, errors = validate_district(parsed)
+            elif kind == "mukim":
+                rec, errors = validate_mukim(parsed)
             elif kind == "editor":
                 rec, errors = validate_editor(parsed)
             else:
@@ -659,7 +659,7 @@ class Handler(BaseHTTPRequestHandler):
                 raise _ValidationError(errors)
             coll = all_data["masjids.json" if kind == "masjid" else "speakers.json" if kind == "speaker"
                                 else "categories.json" if kind == "category" else "events.json"
-                                if kind == "event" else "districts.json" if kind == "district"
+                                if kind == "event" else "mukims.json" if kind == "mukim"
                                 else "editors.json"]
             if kind == "masjid":
                 rec = {"id": next_masjid_id(rec["name"], coll), **rec}
@@ -667,8 +667,8 @@ class Handler(BaseHTTPRequestHandler):
                 rec = {"id": next_speaker_id(rec["name"], coll), **rec}
             elif kind == "category":
                 rec = {"id": next_category_id(rec["name"], coll), **rec}
-            elif kind == "district":
-                rec = {"id": next_district_id(rec["name"], coll), **rec}
+            elif kind == "mukim":
+                rec = {"id": next_mukim_id(rec["name"], coll), **rec}
             elif kind == "editor":
                 rec = {"id": next_editor_id(rec["name"], coll), **rec}
             else:
@@ -698,7 +698,7 @@ class Handler(BaseHTTPRequestHandler):
             return self._send_json(400, {"errors": ["too many events (max 200)."]})
 
         def apply(all_data):
-            masjid, errors = validate_masjid(masjid_form, all_data["districts.json"])
+            masjid, errors = validate_masjid(masjid_form, all_data["mukims.json"])
             if errors:
                 raise _ValidationError(errors)
             coll = all_data["masjids.json"]
@@ -760,13 +760,13 @@ class Handler(BaseHTTPRequestHandler):
             if idx is None:
                 raise _NotFound()
             if fname == "masjids.json":
-                rec, errors = validate_masjid(parsed, all_data["districts.json"])
+                rec, errors = validate_masjid(parsed, all_data["mukims.json"])
             elif fname == "speakers.json":
                 rec, errors = validate_speaker(parsed)
             elif fname == "categories.json":
                 rec, errors = validate_category(parsed)
-            elif fname == "districts.json":
-                rec, errors = validate_district(parsed)
+            elif fname == "mukims.json":
+                rec, errors = validate_mukim(parsed)
             elif fname == "editors.json":
                 rec, errors = validate_editor(parsed)
             else:
@@ -821,8 +821,8 @@ class Handler(BaseHTTPRequestHandler):
                 field, refs_source = "speaker_id", events
             elif fname == "categories.json":
                 field, refs_source = "category_id", events
-            elif fname == "districts.json":
-                field, refs_source = "district_id", masjids
+            elif fname == "mukims.json":
+                field, refs_source = "mukim_id", masjids
             elif fname == "editors.json":
                 field, refs_source = "editor_id", masjids
             else:

@@ -156,13 +156,13 @@ let qf = ME.events.filterEvents(events, { q: "an-nur" });
 assert(qf.every(function (o) { return o.masjid_id === "m2"; }),
   "q 'an-nur' matches by masjid name, got " + qf.map(function (o) { return o.id; }).join(","));
 
-// district filter (masjid lookup again)
+// mukim filter (masjid lookup again)
 ME.masjids.get = function (id) {
-  return { m1: { district: "Kangar" }, m2: { district: "Arau" } }[id] || null;
+  return { m1: { mukim: "Kangar" }, m2: { mukim: "Arau" } }[id] || null;
 };
-let df = ME.events.filterEvents(events, { district: "Kangar" });
+let df = ME.events.filterEvents(events, { mukim: "Kangar" });
 assert(df.length === 2 && df.every(function (o) { return o.masjid_id === "m1"; }),
-  "district Kangar returns only m1 events, got " + df.length);
+  "mukim Kangar returns only m1 events, got " + df.length);
 
 // --- Stage 10: recurrence exceptions (cancel individual occurrences) ---
 // e7 recurs weekly on Wednesdays from 2026-08-12, with 2026-08-26 excluded.

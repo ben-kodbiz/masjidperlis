@@ -106,8 +106,8 @@
         <h2 id="h-masjid">1. Maklumat Masjid</h2>
         <label for="name">Nama masjid *</label>
         <input id="name" name="name" type="text" required autocomplete="organization">
-        <label for="district">Daerah</label>
-        <input id="district" type="text" placeholder="cth. Kangar">
+        <label for="mukim">Mukim</label>
+        <input id="mukim" type="text" placeholder="cth. Kangar">
         <label for="state">Negeri</label>
         <input id="state" type="text" value="Perlis">
         <label for="address">Alamat</label>
@@ -233,7 +233,7 @@
     };
     var masjid = {
       name: val("name"),
-      district: val("district"),
+      mukim: val("mukim"),
       state: val("state") || "Perlis",
       address: val("address"),
       latitude: val("lat") || null,

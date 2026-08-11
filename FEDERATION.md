@@ -8,7 +8,7 @@ single-source Google Sheets adapter (`tools/import_google_sheet.py`).
 
 All feeds normalize into the canonical schema defined in `DATA_SCHEMA.md`
 before they are merged: federated collections are `masjids`, `events`,
-`speakers`, `categories`. `settings.json`, `districts.json` and `editors.json`
+`speakers`, `categories`. `settings.json`, `mukims.json` and `editors.json`
 always pass through unchanged — maintain those via the admin tool or JSON.
 
 It is a local tool like the admin server and the sheet importer; it is not
@@ -87,8 +87,8 @@ carry a nested `recurrence` object (see `DATA_SCHEMA.md`) or the rolled-up
 Reference cells (`masjid_id`, `speaker_id`, `category_id`) accept either the
 canonical id or the current display name, resolved against **everything already
 merged** (existing data plus earlier feeds), so a masjid created by feed A can
-be referenced by an event in feed B. Masjid `district_id` is derived from the
-free-text `district` using the official Perlis district names.
+be referenced by an event in feed B. Masjid `mukim_id` is derived from the
+free-text `mukim` using the official Perlis mukim names.
 
 ### Header secrets
 

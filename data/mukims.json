@@ -2,12 +2,12 @@
   {
     "id": "kangar",
     "name": "Kangar",
-    "description": "Ibu negeri Perlis dan daerah sekitarnya, termasuk bandar Kangar."
+    "description": "Ibu negeri Perlis dan mukim sekitarnya, termasuk bandar Kangar."
   },
   {
     "id": "arau",
     "name": "Arau",
-    "description": "Pusat pentadbiran diraja dan daerah Arau."
+    "description": "Pusat pentadbiran diraja dan mukim Arau."
   },
   {
     "id": "padang-besar",
@@ -22,7 +22,7 @@
   {
     "id": "beseri",
     "name": "Beseri",
-    "description": "Daerah kecil di utara, termasuk Kuala Perlis."
+    "description": "Mukim kecil di utara, termasuk Kuala Perlis."
   },
   {
     "id": "chuping",

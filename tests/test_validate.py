@@ -16,7 +16,7 @@ VALIDATE = Path(__file__).resolve().parent.parent / "tools" / "validate_data.py"
 DATA = Path(__file__).resolve().parent.parent / "data"
 
 VALID_FILES = ("masjids.json", "events.json", "speakers.json", "categories.json",
-               "settings.json", "districts.json", "editors.json")
+               "settings.json", "mukims.json", "editors.json")
 
 
 def run(data_dir):
@@ -96,30 +96,30 @@ def test_broken_data_fails():
     assert "missing required field 'title'" in out
 
 
-def test_masjid_district_reference_fails():
-    tmp = make_dir("district-ref")
+def test_masjid_mukim_reference_fails():
+    tmp = make_dir("mukim-ref")
     copy_valid(tmp)
 
     bad_masjids = [
         {
             "id": "masjid-x",
             "name": "Masjid X",
-            "district": "Kangar",
-            "district_id": "kangar",
+            "mukim": "Kangar",
+            "mukim_id": "kangar",
             "state": "Perlis",
         },
         {
             "id": "masjid-y",
             "name": "Masjid Y",
-            "district": "Arau",
-            "district_id": "daerah-tak-wujud",
+            "mukim": "Arau",
+            "mukim_id": "mukim-tak-wujud",
             "state": "Perlis",
         },
         {
             "id": "masjid-z",
             "name": "Masjid Z",
-            "district": "Arau",
-            "district_id": "kangar",
+            "mukim": "Arau",
+            "mukim_id": "kangar",
             "state": "Perlis",
         },
     ]
@@ -129,18 +129,18 @@ def test_masjid_district_reference_fails():
     shutil.rmtree(tmp)
     out = result.stdout + result.stderr
     assert result.returncode != 0
-    assert "unknown district_id" in out
-    assert "does not match the name of district_id" in out
+    assert "unknown mukim_id" in out
+    assert "does not match the name of mukim_id" in out
 
 
-def test_missing_district_id_fails():
-    tmp = make_dir("no-district-id")
+def test_missing_mukim_id_fails():
+    tmp = make_dir("no-mukim-id")
     copy_valid(tmp)
 
     bad_masjids = [{
         "id": "masjid-x",
         "name": "Masjid X",
-        "district": "Kangar",
+        "mukim": "Kangar",
         "state": "Perlis",
     }]
     write_json(tmp / "masjids.json", bad_masjids)
@@ -148,7 +148,7 @@ def test_missing_district_id_fails():
     result = run(tmp)
     shutil.rmtree(tmp)
     assert result.returncode != 0, result.stdout + result.stderr
-    assert "district_id" in result.stdout + result.stderr
+    assert "mukim_id" in result.stdout + result.stderr
 
 
 def test_recurrence_exceptions_fails():

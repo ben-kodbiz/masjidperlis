@@ -210,7 +210,7 @@ Implement Today's/Tomorrow's/Upcoming events, event cards, event detail page, da
 
 # 9. Stage 5 — Masjid Directory
 
-Individual masjid pages use `masjid.html?id={masjid-id}`. Clean `/masjid/{masjid-id}` URL rewriting is deferred to static generation (Stage 11). Each masjid shows name, district, address, location (OpenStreetMap link), upcoming events, optional contact/website.
+Individual masjid pages use `masjid.html?id={masjid-id}`. Clean `/masjid/{masjid-id}` URL rewriting is deferred to static generation (Stage 11). Each masjid shows name, mukim, address, location (OpenStreetMap link), upcoming events, optional contact/website.
 
 ### Acceptance
 - [x] Masjid list works.
@@ -221,7 +221,7 @@ Individual masjid pages use `masjid.html?id={masjid-id}`. Clean `/masjid/{masjid
 
 # 10. Stage 6 — Search and Filtering
 
-Client-side search over title, description, masjid name, speaker name, category. Filters: masjid, district, category, date range, status. No server-side search engine.
+Client-side search over title, description, masjid name, speaker name, category. Filters: masjid, mukim, category, date range, status. No server-side search engine.
 
 ### Acceptance
 - [x] Search works on mobile.
@@ -351,15 +351,15 @@ Workflows: `validate.yml` and `deploy.yml`. Validation on pull request, push to 
 
 # 20. Stage 16 — Multi-Masjid Administration
 
-Introduce organization/ownership concept (State -> District -> Masjid -> Editors -> Events). Establish data model first; do not implement complex multi-tenant auth until there is a real requirement.
+Introduce organization/ownership concept (State -> Mukim -> Masjid -> Editors -> Events). Establish data model first; do not implement complex multi-tenant auth until there is a real requirement.
 
 ### Acceptance
-- [x] Districts modelled as a collection (`data/districts.json`) with stable ids.
+- [x] Mukims modelled as a collection (`data/mukims.json`) with stable ids.
 - [x] Editors collection (`data/editors.json`) representing local admins (metadata only, no auth).
-- [x] Masjids linked to districts via required `district_id` and optional `editor_id` (validated).
-- [x] Admin tool CRUD for districts/editors; delete blocked while referenced by masjids.
-- [x] Validator enforces district/editor references and district-name consistency.
-- [x] Sheet importer derives `district_id` from the free-text district.
+- [x] Masjids linked to mukims via required `mukim_id` and optional `editor_id` (validated).
+- [x] Admin tool CRUD for mukims/editors; delete blocked while referenced by masjids.
+- [x] Validator enforces mukim/editor references and mukim-name consistency.
+- [x] Sheet importer derives `mukim_id` from the free-text mukim.
 - [x] Docs, tests and the `public/data` mirror updated.
 
 ---
@@ -701,7 +701,7 @@ Completed:
   - Masjid directory (masjids.html): grid of all masjids; cards now show the
     number of upcoming events per masjid ("N acara akan datang").
   - Masjid detail page (masjid.html?id={id}):
-      * name, district/state, address
+      * name, mukim/state, address
       * location link to OpenStreetMap (no-MAPS-API, static friendly)
       * optional "Hubungi" (tel:) and "Laman web" links when data present
       * "Hari Ini" section with that masjid's events for the current date
@@ -735,7 +735,7 @@ Files changed:
 Known issues:
   - None blocking. Clean /m/{id} URLs remain a static-generation item (Stage 11).
 Next stage: Stage 6 — Search and filtering refinements (client-side search
-  over title/masjid/speaker, district filter, refined empty/result states).
+  over title/masjid/speaker, mukim filter, refined empty/result states).
 ```
 
 ---
@@ -747,31 +747,31 @@ Current stage: Stage 6 (Search and Filtering) — COMPLETE
 Completed:
   - Events page search now matches title, description, masjid name, speaker
     name, and category name (new shared ME.events.searchText helper).
-  - Events page gained a district filter ("filter-district") alongside the
+  - Events page gained a mukim filter ("filter-mukim") alongside the
     existing masjid / category / status / date-range filters.
   - Masjid directory (masjids.html) gained its own live search box
-    ("masjid-search") and district filter, powered by new ME.masjids helpers:
-      * filterMasjids(q, { district })  — matches id/name/district/state/address
-      * districts()                    — sorted distinct values for the dropdown
+    ("masjid-search") and mukim filter, powered by new ME.masjids helpers:
+      * filterMasjids(q, { mukim })  — matches id/name/mukim/state/address
+      * mukims()                    — sorted distinct values for the dropdown
   - Directory grid now shows an empty state ("Tiada masjid ditemui…") when no
     masjid matches, mirroring the events empty-state.
   - ME.categories wiring added in app.js (alongside ME.speakers) so searchText
     can resolve category names on all pages.
 Tests:
   - node tests/test_events.js  -> 30/30 (added: searchText across masjid/
-    speaker/category; q match by masjid name; district filter)
+    speaker/category; q match by masjid name; mukim filter)
   - node tests/test_masjids.js -> 12/12 (added: filterMasjids by name/id,
-    district filter, no-match empty, districts() sorting)
+    mukim filter, no-match empty, mukims() sorting)
   - python3 tests/test_validate.py -> 4/4 passed
   - python3 tools/validate_data.py -> OK (exit 0)
   - node --check on all public/js/*.js -> clean
   - Headless Chrome: events.html + masjids.html render with no error-box at
-    desktop and 375px mobile; district options (Arau, Kangar) present on both
+    desktop and 375px mobile; mukim options (Arau, Kangar) present on both
     pages; masjid cards + event cards render.
 Files changed:
   - public/js/events.js (searchText helper + q uses it; export)
-  - public/js/masjids.js (filterMasjids, districts, empty-state in renderGrid)
-  - public/js/app.js (districtSel on events page + wiring; ME.categories;
+  - public/js/masjids.js (filterMasjids, mukims, empty-state in renderGrid)
+  - public/js/app.js (mukimSel on events page + wiring; ME.categories;
     directory search/filter UI)
   - tests/test_events.js, tests/test_masjids.js (extended)
   - TODO_AGENT.md
@@ -1270,39 +1270,39 @@ Next stage: Stage 16 — Multi-Masjid Administration.
 ```text
 Current stage: Stage 16 (Multi-Masjid Administration) — complete.
 Completed:
-  - New collections: data/districts.json (official Perlis districts) and
+  - New collections: data/mukims.json (official Perlis mukims) and
     data/editors.json (editor metadata only — no auth, per roadmap rule).
-  - data/masjids.json: every masjid now links district_id (required, FK to
-    districts) and optional editor_id; the free-text district field remains
-    as a display value and must agree with the linked district's name.
-  - tools/validate_data.py: districts/editors become fixed files; masjids are
-    checked for unknown district_id / editor_id and district/name mismatch.
-  - tools/serve.py: /api/districts + /api/editors CRUD; delete-blocking
-    extended so in-use districts/editors cannot be removed; masjid form
-    accepts district_id and back-fills the display name (resolved against the
-    live districts file); district_id derived from free-text district when
-    possible; fresh data dirs seed the official districts.
-  - Admin UI: new admin/districts.html + admin/editors.html pages, Daerah/
-    Editor nav on every page, index stats, masjid page district + editor
+  - data/masjids.json: every masjid now links mukim_id (required, FK to
+    mukims) and optional editor_id; the free-text mukim field remains
+    as a display value and must agree with the linked mukim's name.
+  - tools/validate_data.py: mukims/editors become fixed files; masjids are
+    checked for unknown mukim_id / editor_id and mukim/name mismatch.
+  - tools/serve.py: /api/mukims + /api/editors CRUD; delete-blocking
+    extended so in-use mukims/editors cannot be removed; masjid form
+    accepts mukim_id and back-fills the display name (resolved against the
+    live mukims file); mukim_id derived from free-text mukim when
+    possible; fresh data dirs seed the official mukims.
+  - Admin UI: new admin/mukims.html + admin/editors.html pages, Mukim/
+    Editor nav on every page, index stats, masjid page mukim + editor
     dropdowns.
-  - tools/import_google_sheet.py: derives district_id on import and passes
-    districts/editors/settings through untouched during the temp validation.
-  - .github/workflows/validate.yml mirror check now covers districts/editors.
+  - tools/import_google_sheet.py: derives mukim_id on import and passes
+    mukims/editors/settings through untouched during the temp validation.
+  - .github/workflows/validate.yml mirror check now covers mukims/editors.
   - Docs updated (DATA_SCHEMA.md sections 4-11, ARCHITECTURE.md file tree,
     SHEET_IMPORT.md column notes). public/data mirror re-synced.
 Tests:
-  - validate 8/8 (new: missing district_id fails, unknown/mismatched district
-    fails), admin 7/7 (new: district/editor CRUD + reference blocking +
-    district derivation), import_sheet 4/4, build_site 14/14, JS suites
+  - validate 8/8 (new: missing mukim_id fails, unknown/mismatched mukim
+    fails), admin 7/7 (new: mukim/editor CRUD + reference blocking +
+    mukim derivation), import_sheet 4/4, build_site 14/14, JS suites
     events 37/37, masjids 12/12, share 12/12, ics 21/21, maps 9/9.
   - tools/validate_data.py -> OK on data/; node --check clean;
     mirror-in-sync check passes.
 Files changed:
-  - data/districts.json, data/editors.json (new), data/masjids.json
-  - public/data/districts.json, public/data/editors.json (new),
+  - data/mukims.json, data/editors.json (new), data/masjids.json
+  - public/data/mukims.json, public/data/editors.json (new),
     public/data/masjids.json (mirror)
   - tools/{validate_data,serve,import_google_sheet}.py
-  - admin/{districts,editors}.html (new) + masjids.html dropdowns + nav on
+  - admin/{mukims,editors}.html (new) + masjids.html dropdowns + nav on
     index/events/event-editor/speakers/categories + index stats
   - tests/{test_validate,test_admin,test_import_sheet}.py
   - DATA_SCHEMA.md, ARCHITECTURE.md, SHEET_IMPORT.md,
@@ -1343,7 +1343,7 @@ Completed:
       * the FULL merged set is validated against a throwaway copy BEFORE
         writing; failure aborts with exit 2 and data/ is byte-identical.
         --dry-run validates only; --strict aborts on any skipped row.
-      * settings/districts/editors pass through untouched.
+      * settings/mukims/editors pass through untouched.
   - tools/feeds.example.json (new) documenting all four feed types.
   - FEDERATION.md (new): feed types, config reference, payload shapes,
     reference resolution, merge guarantees, header secrets, usage/exit codes.
@@ -1353,7 +1353,7 @@ Completed:
     done and followed by accessibility/performance/security/docs).
 Tests:
   - tests/test_federate.py (new) -> 7/7: aggregate + cross-feed update with
-    district derivation and id uniqueness; invalid date + unknown reference
+    mukim derivation and id uniqueness; invalid date + unknown reference
     rows skipped and reported; merged-data validation failure aborts without
     writing; --dry-run writes nothing; non-strict vs --strict behavior; a
     live local HTTP endpoint exercises the json-url loader; a google-sheet
@@ -1500,7 +1500,7 @@ Completed:
       asserts this; breaks are impossible without a sink).
     - Admin used innerHTML for tables/forms; many attribute interpolations
       (data-id="', ?id=, <option value>) were NOT escaped. Fixed every one:
-      admin/{events,masjids,speakers,categories,districts,editors,
+      admin/{events,masjids,speakers,categories,mukims,editors,
       event-editor}.html now wrap ids in A.esc(...). Defense in depth is
       doubled because validate_data.ID_RE restricts ids to
       ^[a-z0-9]+(-[a-z0-9]+)*$ (hostile ids are rejected at validation).
@@ -1528,7 +1528,7 @@ Tests:
   - All existing suites re-run green (validate/build/admin/import/federate/
     a11y/perf + node modules + security audit).
 Files changed:
-  - admin/{events,masjids,speakers,categories,districts,editors,
+  - admin/{events,masjids,speakers,categories,mukims,editors,
     event-editor}.html (A.esc on id attribute sinks)
   - tools/security_audit.py (new), tests/test_security.py (new)
   - SECURITY.md, .github/workflows/validate.yml, TODO_AGENT.md
@@ -1555,7 +1555,7 @@ Completed:
       summarise what each doc covers; roadmap pointer retained.
   ADMIN_GUIDE.md (new):
     - Panel as a local-only tool (never deployed); starting serve.py; the
-      per-page model (Ringkasan/Acara/Masjid/Penceramah/Kategori/Daerah/Editor
+      per-page model (Ringkasan/Acara/Masjid/Penceramah/Kategori/Mukim/Editor
       + legacy add-masjid.html).
     - Events: fields, validations, and the five statuses
       (draft/published/cancelled/postponed/completed) with their public
@@ -1605,7 +1605,7 @@ Decisions:
     deferred to the maintainer; the demo set is verified production-shaped.
 Completed:
   - Verified demo data is complete for a live smoke test: 3 masjids each have
-    real Perlis coordinates + addresses + district/editor links (fields are
+    real Perlis coordinates + addresses + mukim/editor links (fields are
     latitude/longitude, not a geo object); 8 events incl. cancelled
     (evt-20260811-001), postponed (evt-20260818-001), and a weekly recurring
     event with an exception (evt-20260812-001, exceptions 2026-08-19).
@@ -1714,5 +1714,52 @@ Files changed:
 Known issues:
   - Only the first worksheet of an .xlsx is read unless "sheet" is set. The old
     binary .xls format is NOT supported (use .xlsx).
+Next stage: none required. Future ideas are intentionally deferred.
+```
+
+---
+
+# Session Report — 2026-08-11 (27) — Daerah → Mukim rename (data model + UI + docs)
+
+```text
+Current stage: post-MVP correction — Perlis has no "daerah/district", only
+  mukim; the whole concept was renamed end to end.
+Completed:
+  - Data model: data/districts.json -> data/mukims.json (file renamed);
+    masjid fields district/district_id -> mukim/mukim_id in data/masjids.json
+    and the public/data mirror.
+  - tools (serve.py, validate_data.py, build_site.py, import_google_sheet.py,
+    federate.py): mukim_id_for(), validate_mukim(), mukim_lookup_name(),
+    unknown/mismatched mukim errors, API /api/mukims, collection key "mukims",
+    KNOWN_MUKIMS seeding, import/federation derive mukim_id from the
+    free-text Mukim column.
+  - Admin UI: admin/districts.html -> admin/mukims.html (renamed); "Mukim" nav
+    + labels on every page; masjid form now "Mukim" selected -> display text
+    generated; index stat n-mukims; delete-blocking uses mukim_id.
+  - Public site: filter id filter-district -> filter-mukim, mukimSel,
+    ME.masjids.mukims(), opts.mukim — masjid pages and filters read m.mukim.
+  - CSV/config: data-entry/3-masjids.csv and 4-acara templates header "Mukim";
+    data-entry/config.json + tools/sheets_import.example.json map
+    "Mukim" -> "mukim"; feeds.example.json description.
+  - Docs: DATA_SCHEMA.md (section 4 Mukims, field table, constraints),
+    DATA_ENTRY_GUIDE / SHEET_IMPORT / ADMIN_GUIDE / README / ARCHITECTURE /
+    FEDERATION / TODO_AGENT.
+  - .github/workflows/validate.yml mirror list: districts -> mukims.
+Tests:
+  - validate 8/8, admin 7/7, import_sheet 9/9, federate 7/7, build_site 13/14
+    (pre-existing unrelated failure), a11y-css 3/3, perf 6/6, security 7/7;
+    node masjids 12, events 37, share 12, ics 21, maps 9, a11y 4 — all pass.
+  - tools/validate_data.py OK; security audit CLEAN; build_site regenerates
+    event/masjid pages + sitemap with mukim data.
+Files changed:
+  - renamed: data/districts.json -> data/mukims.json,
+    public/data/districts.json -> public/data/mukims.json,
+    admin/districts.html -> admin/mukims.html.
+  - updated: tools/{serve,validate_data,build_site,import_google_sheet,
+    federate}.py, admin/*.html, public/js/{app,events,masjids}.js,
+    data/masjids.json, public/data/masjids.json, data-entry/*, tools/feeds + 
+    sheets_import example, .github/workflows/validate.yml, tests/*, docs.
+Known issues:
+  - None.
 Next stage: none required. Future ideas are intentionally deferred.
 ```

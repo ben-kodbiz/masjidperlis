@@ -275,8 +275,8 @@ def masjid_jsonld(masjid, url):
     addr = {"@type": "PostalAddress"}
     if masjid.get("address"):
         addr["streetAddress"] = masjid["address"]
-    if masjid.get("district"):
-        addr["addressLocality"] = masjid["district"]
+    if masjid.get("mukim"):
+        addr["addressLocality"] = masjid["mukim"]
     if masjid.get("state"):
         addr["addressRegion"] = masjid["state"]
     if len(addr) > 1:
@@ -533,8 +533,8 @@ def event_body(ev, masjid, speaker, category, base):
 
 def masjid_body(masjid, events, masjids_by_id, categories_by_id, speakers_by_id, today, base):
     lines = []
-    if masjid.get("district") or masjid.get("state"):
-        lines.append(", ".join(x for x in (masjid.get("district"), masjid.get("state")) if x))
+    if masjid.get("mukim") or masjid.get("state"):
+        lines.append(", ".join(x for x in (masjid.get("mukim"), masjid.get("state")) if x))
     meta_html = '    <p class="muted">{}</p>'.format(esc(", ".join(lines))) if lines else ""
     address_html = '    <p>{}</p>'.format(esc(masjid.get("address"))) if masjid.get("address") else ""
 
@@ -899,7 +899,7 @@ def main(argv=None):
             title="{} \u2014 {}".format(masjid.get("name") or "", site_name),
             description="{} \u2014 {}".format(
                 masjid.get("name") or "",
-                ", ".join(x for x in (masjid.get("district"), masjid.get("state")) if x) or "Perlis"),
+                ", ".join(x for x in (masjid.get("mukim"), masjid.get("state")) if x) or "Perlis"),
             canonical=canonical,
             og_type="website",
             og_title=masjid.get("name") or site_name,

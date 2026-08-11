@@ -25,7 +25,7 @@ DATA_FILES = ("masjids.json", "events.json", "speakers.json", "categories.json",
 
 # Malay column headers + field mapping matching tools/sheets_import.example.json
 COLS = {
-    "masjids": ["id", "Nama", "Daerah", "Negeri", "Alamat", "Latitud", "Longitud", "Kenalan", "Laman web"],
+    "masjids": ["id", "Nama", "Mukim", "Negeri", "Alamat", "Latitud", "Longitud", "Kenalan", "Laman web"],
     "speakers": ["id", "Nama", "Penerangan"],
     "categories": ["id", "Nama"],
     "events": [
@@ -36,7 +36,7 @@ COLS = {
 }
 
 MAP = {
-    "masjids": {"id": "id", "Nama": "name", "Daerah": "district", "Negeri": "state",
+    "masjids": {"id": "id", "Nama": "name", "Mukim": "mukim", "Negeri": "state",
                 "Alamat": "address", "Latitud": "latitude", "Longitud": "longitude",
                 "Kenalan": "contact", "Laman web": "website"},
     "speakers": {"id": "id", "Nama": "name", "Penerangan": "description"},
@@ -249,11 +249,11 @@ def test_happy_merge_add_update_skip():
         by_id = {m["id"]: m for m in masjids}
         # update applied
         assert by_id["masjid-alwi"]["name"] == "Masjid Alwi (Baharu)", by_id["masjid-alwi"]
-        # district_id derived from the free-text district column
-        assert by_id["masjid-alwi"]["district_id"] == "kangar", by_id["masjid-alwi"]
+        # mukim_id derived from the free-text mukim column
+        assert by_id["masjid-alwi"]["mukim_id"] == "kangar", by_id["masjid-alwi"]
         # new masjid added (kept others, not pruned)
         assert "masjid-import-satu" in by_id
-        assert by_id["masjid-import-satu"]["district_id"] == "arau", by_id["masjid-import-satu"]
+        assert by_id["masjid-import-satu"]["mukim_id"] == "arau", by_id["masjid-import-satu"]
         assert "masjid-ar-rahmah" in by_id and "masjid-an-nur" in by_id
 
         # new speaker/category added

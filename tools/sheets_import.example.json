@@ -8,7 +8,7 @@
       "columns": {
         "id": "id",
         "Nama": "name",
-        "Daerah": "district",
+        "Mukim": "mukim",
         "Negeri": "state",
         "Alamat": "address",
         "Latitud": "latitude",

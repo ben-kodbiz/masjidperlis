@@ -2,8 +2,8 @@
   {
     "id": "masjid-alwi",
     "name": "Masjid Alwi",
-    "district": "Kangar",
-    "district_id": "kangar",
+    "mukim": "Kangar",
+    "mukim_id": "kangar",
     "state": "Perlis",
     "address": "Jalan Tuanku Syed Putra, 01000 Kangar, Perlis",
     "latitude": 6.4405,
@@ -14,8 +14,8 @@
   {
     "id": "masjid-ar-rahmah",
     "name": "Masjid Al-Rahmah",
-    "district": "Arau",
-    "district_id": "arau",
+    "mukim": "Arau",
+    "mukim_id": "arau",
     "state": "Perlis",
     "address": "Jalan Tengku Budriah, 02600 Arau, Perlis",
     "latitude": 6.4305,
@@ -26,8 +26,8 @@
   {
     "id": "masjid-an-nur",
     "name": "Masjid An-Nur",
-    "district": "Kangar",
-    "district_id": "kangar",
+    "mukim": "Kangar",
+    "mukim_id": "kangar",
     "state": "Perlis",
     "address": "Kampung Bakau, 01000 Kangar, Perlis",
     "latitude": 6.4279,

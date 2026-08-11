@@ -43,7 +43,7 @@ id,Nama,Penerangan
 `3-masjids.csv`:
 
 ```csv
-id,Nama,Daerah,Negeri,Alamat,Latitud,Longitud,Kenalan,Laman web
+id,Nama,Mukim,Negeri,Alamat,Latitud,Longitud,Kenalan,Laman web
 ,masjid-alwi,Kangar,Perlis,Jalan Tuanku Syed Putra 01000 Kangar,6.4405,100.1952,,
 ```
 

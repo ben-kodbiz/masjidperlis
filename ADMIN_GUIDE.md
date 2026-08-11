@@ -28,10 +28,10 @@ python3 tools/serve.py
 | ----------- | -------------------------------------------------------------------- |
 | Ringkasan   | Dashboard with counts + **Semak data** / **Terbitkan** (section 5)   |
 | Acara       | List, filter, edit, and change event status                          |
-| Masjid      | Create/edit masjids, assign district + editor, delete (blocked if referenced) |
+| Masjid      | Create/edit masjids, assign mukim + editor, delete (blocked if referenced) |
 | Penceramah  | Speaker profiles used by events                                      |
 | Kategori    | Event categories                                                     |
-| Daerah      | Districts (the demo data ships 15); masjids reference a district |
+| Mukim      | Mukims (the demo data ships 15); masjids reference a mukim |
 | Editor      | Editor accounts associated with masjids (organizational model)       |
 
 Legacy bulk entry (a masjid plus a repeating schedule in one form) remains at

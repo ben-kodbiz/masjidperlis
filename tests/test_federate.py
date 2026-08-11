@@ -24,7 +24,7 @@ FEDERATE = ROOT / "tools" / "federate.py"
 DATA = ROOT / "data"
 
 DATA_FILES = ("masjids.json", "events.json", "speakers.json", "categories.json",
-              "settings.json", "districts.json", "editors.json")
+              "settings.json", "mukims.json", "editors.json")
 
 
 def run(feeds_path, data_dir, *extra):
@@ -74,7 +74,7 @@ def test_federation_aggregates_and_updates():
     feed1 = tmp / "feed1.json"
     write_json(feed1, {
         "masjids": [
-            {"name": "Masjid Zakat Kangar", "district": "Kangar"}
+            {"name": "Masjid Zakat Kangar", "mukim": "Kangar"}
         ],
         "speakers": [
             {"name": "Ustaz Satu", "description": "juru dakwah"}
@@ -88,7 +88,7 @@ def test_federation_aggregates_and_updates():
     write_json(feed2, {
         "masjids": [
             {"id": "masjid-zakat-kangar", "name": "Masjid Zakat Kangar (Baharu)",
-             "district": "Kangar"},
+             "mukim": "Kangar"},
         ],
         "events": [
             {"title": "Ceramah Cawangan", "masjid_id": "Masjid Zakat Kangar (Baharu)",
@@ -109,9 +109,9 @@ def test_federation_aggregates_and_updates():
         speakers = read_json(data_dir / "speakers.json")
 
         by_id = {m["id"]: m for m in masjids}
-        # feed2 updates the masjid created by feed1 (by id), district preserved
+        # feed2 updates the masjid created by feed1 (by id), mukim preserved
         assert by_id["masjid-zakat-kangar"]["name"] == "Masjid Zakat Kangar (Baharu)"
-        assert by_id["masjid-zakat-kangar"]["district_id"] == "kangar"
+        assert by_id["masjid-zakat-kangar"]["mukim_id"] == "kangar"
         # existing real masjids are kept (no pruning)
         assert "masjid-alwi" in by_id
 
@@ -168,9 +168,9 @@ def test_invalid_rows_and_unknown_reference_skipped():
 def test_validation_failure_aborts_without_writing():
     tmp, data_dir = make_env()
     feed = tmp / "feed.json"
-    # unrecognised district => district_id stays None => merged set invalid
+    # unrecognised mukim => mukim_id stays None => merged set invalid
     write_json(feed, {
-        "masjids": [{"name": "Masjid Jauh", "district": "Fakelande"}],
+        "masjids": [{"name": "Masjid Jauh", "mukim": "Fakelande"}],
     })
     config = write_config(tmp, [
         {"name": "badmasjid", "type": "local-json", "path": str(feed),
@@ -181,7 +181,7 @@ def test_validation_failure_aborts_without_writing():
     try:
         assert result.returncode == 2, result.stdout + result.stderr
         assert "ABORTED" in result.stdout + result.stderr
-        assert "district_id" in result.stdout + result.stderr
+        assert "mukim_id" in result.stdout + result.stderr
         after = {f: (data_dir / f).read_bytes() for f in DATA_FILES}
         assert before == after, "abort must leave data/ untouched"
     finally:
@@ -262,7 +262,7 @@ class _FeedHandler(BaseHTTPRequestHandler):
 def test_json_url_feed():
     server = ThreadingHTTPServer(("127.0.0.1", 0), _FeedHandler)
     _FeedHandler.payload = json.dumps({
-        "masjids": [{"name": "Masjid Web", "district": "Arau"}],
+        "masjids": [{"name": "Masjid Web", "mukim": "Arau"}],
         "events": [{"title": "Acara Web", "masjid_id": "Masjid Web",
                     "date": "2026-11-07", "start_time": "20:00"}],
     }, ensure_ascii=False).encode("utf-8")
@@ -279,7 +279,7 @@ def test_json_url_feed():
         assert result.returncode == 0, result.stdout + result.stderr
         masjids = read_json(data_dir / "masjids.json")
         events = read_json(data_dir / "events.json")
-        assert any(m["id"] == "masjid-web" and m["district_id"] == "arau" for m in masjids)
+        assert any(m["id"] == "masjid-web" and m["mukim_id"] == "arau" for m in masjids)
         assert any(e["title"] == "Acara Web" for e in events)
     finally:
         server.shutdown()
@@ -292,14 +292,14 @@ def test_json_url_feed():
 # ---------------------------------------------------------------------------
 
 COLS = {
-    "masjids": ["id", "Nama", "Daerah", "Negeri"],
+    "masjids": ["id", "Nama", "Mukim", "Negeri"],
     "speakers": ["id", "Nama", "Penerangan"],
     "categories": ["id", "Nama"],
     "events": ["id", "Tajuk", "Masjid", "Tarikh", "Mula", "Penceramah",
                "Kategori", "Status"],
 }
 MAP = {
-    "masjids": {"Nama": "name", "Daerah": "district", "Negeri": "state"},
+    "masjids": {"Nama": "name", "Mukim": "mukim", "Negeri": "state"},
     "speakers": {"Nama": "name", "Penerangan": "description"},
     "categories": {"Nama": "name"},
     "events": {"Tajuk": "title", "Masjid": "masjid_id", "Tarikh": "date",
@@ -349,7 +349,7 @@ def test_google_sheet_feed_with_cross_feed_json():
         assert result.returncode == 0, result.stdout + result.stderr
         masjids = read_json(data_dir / "masjids.json")
         events = read_json(data_dir / "events.json")
-        assert any(m["id"] == "masjid-cawangan" and m["district_id"] == "kangar"
+        assert any(m["id"] == "masjid-cawangan" and m["mukim_id"] == "kangar"
                    for m in masjids)
         by_title = {e["title"]: e for e in events}
         assert "Kuliyyah Cawangan" in by_title

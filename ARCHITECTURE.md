@@ -170,7 +170,7 @@ Browser
        +-- masjids.json
        +-- speakers.json
        +-- categories.json
-       +-- districts.json
+       +-- mukims.json
        +-- editors.json
 ```
 
@@ -371,7 +371,7 @@ Do not use the event title as the primary identifier.
 {
   "id": "masjid-alwi",
   "name": "Masjid Alwi",
-  "district": "Kangar",
+  "mukim": "Kangar",
   "state": "Perlis",
   "address": "",
   "latitude": 6.44,

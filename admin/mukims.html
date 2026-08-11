@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Daerah — Panel Pengurusan</title>
+  <title>Mukim — Panel Pengurusan</title>
   <link rel="stylesheet" href="admin.css">
 </head>
-<body data-page="districts">
+<body data-page="mukims">
   <a class="skip-link" href="#main">Langkau ke kandungan</a>
   <header class="admin-header">
     <div class="inner">
@@ -18,7 +18,7 @@
           <li><a href="masjids.html" data-page="masjids">Masjid</a></li>
           <li><a href="speakers.html" data-page="speakers">Penceramah</a></li>
           <li><a href="categories.html" data-page="categories">Kategori</a></li>
-          <li><a href="districts.html" data-page="districts">Daerah</a></li>
+          <li><a href="mukims.html" data-page="mukims">Mukim</a></li>
           <li><a href="editors.html" data-page="editors">Editor</a></li>
         </ul>
       </nav>
@@ -27,14 +27,14 @@
 
   <main id="main" tabindex="-1">
     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-      <h1>Daerah</h1>
-      <button type="button" class="btn" id="btn-new">+ Daerah baru</button>
+      <h1>Mukim</h1>
+      <button type="button" class="btn" id="btn-new">+ Mukim baru</button>
     </div>
     <div id="alert" class="alert" role="alert"></div>
 
     <section id="list-panel" class="card">
       <div class="table-scroll">
-        <table aria-label="Senarai daerah">
+        <table aria-label="Senarai mukim">
           <thead>
             <tr>
               <th>Nama</th>
@@ -46,12 +46,12 @@
           <tbody id="rows"></tbody>
         </table>
       </div>
-      <p id="empty" class="muted" hidden style="padding: 12px 16px;">Tiada daerah.</p>
+      <p id="empty" class="muted" hidden style="padding: 12px 16px;">Tiada mukim.</p>
     </section>
 
     <section id="edit-panel" class="card" hidden>
       <div class="card-head">
-        <h2 id="edit-title">Daerah baru</h2>
+        <h2 id="edit-title">Mukim baru</h2>
       </div>
       <form id="editor" style="padding: 16px;" novalidate>
         <div class="field">
@@ -82,8 +82,8 @@
       function ok(msg) { A.clearAlert(alertBox); A.showAlert(alertBox, "ok", msg); }
 
       function render(d) {
-        document.getElementById("rows").innerHTML = d.districts.map(function (x) {
-          var count = d.masjids.filter(function (m) { return m.district_id === x.id; }).length;
+        document.getElementById("rows").innerHTML = d.mukims.map(function (x) {
+          var count = d.masjids.filter(function (m) { return m.mukim_id === x.id; }).length;
           return "<tr>" +
             "<td><strong>" + A.esc(x.name) + "</strong></td>" +
             "<td>" + A.esc(x.description || "—") + "</td>" +
@@ -92,7 +92,7 @@
             '<button type="button" class="btn btn-danger btn-sm" data-act="delete" data-id="' + A.esc(x.id) + '">Padam</button></td>' +
           "</tr>";
         }).join("");
-        document.getElementById("empty").hidden = d.districts.length > 0;
+        document.getElementById("empty").hidden = d.mukims.length > 0;
       }
 
       function load() {
@@ -103,7 +103,7 @@
 
       function showForm(x) {
         editId = x ? x.id : "";
-        document.getElementById("edit-title").textContent = x ? "Sunting — " + x.name : "Daerah baru";
+        document.getElementById("edit-title").textContent = x ? "Sunting — " + x.name : "Mukim baru";
         document.getElementById("name").value = x ? x.name : "";
         document.getElementById("description").value = x ? x.description || "" : "";
         document.getElementById("list-panel").hidden = true;
@@ -123,12 +123,12 @@
         var act = btn.dataset.act, id = btn.dataset.id;
         if (act === "edit") {
           A.loadData().then(function (d) {
-            var x = d.districts.find(function (r) { return r.id === id; });
-            if (x) showForm(x); else err(["Daerah tidak dijumpai."]);
+            var x = d.mukims.find(function (r) { return r.id === id; });
+            if (x) showForm(x); else err(["Mukim tidak dijumpai."]);
           });
         } else if (act === "delete") {
-          if (!A.confirm("Padamkan daerah ini?")) return;
-          A.api("DELETE", "/api/districts/" + id).then(function (res) {
+          if (!A.confirm("Padamkan mukim ini?")) return;
+          A.api("DELETE", "/api/mukims/" + id).then(function (res) {
             if (!res.ok) { err(res.json.errors || ["Tidak dapat dipadam."]); return; }
             load();
           }).catch(function () { err(["Tiada sambungan ke pelayan tempatan."]); });
@@ -141,11 +141,11 @@
           name: document.getElementById("name").value,
           description: document.getElementById("description").value
         };
-        var p = editId ? A.api("PUT", "/api/districts/" + editId, payload)
-                       : A.api("POST", "/api/districts", payload);
+        var p = editId ? A.api("PUT", "/api/mukims/" + editId, payload)
+                       : A.api("POST", "/api/mukims", payload);
         p.then(function (res) {
           if (!res.ok) { err(res.json.errors || ["Tidak dapat disimpan."]); return; }
-          ok(editId ? "Daerah dikemas kini." : "Daerah dicipta.");
+          ok(editId ? "Mukim dikemas kini." : "Mukim dicipta.");
           editId = "";
           document.getElementById("edit-panel").hidden = true;
           document.getElementById("list-panel").hidden = false;

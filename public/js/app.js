@@ -97,14 +97,14 @@
         ui.el("option", { value: "postponed" }, ["postponed"])
       ]);
 
-    const districtSel = ui.el("select", { id: "filter-district", "aria-label": "Tapis mengikut daerah" },
-      [ui.el("option", { value: "" }, ["Semua daerah"])]);
-    const districts = [];
+    const mukimSel = ui.el("select", { id: "filter-mukim", "aria-label": "Tapis mengikut mukim" },
+      [ui.el("option", { value: "" }, ["Semua mukim"])]);
+    const mukims = [];
     data.masjids.forEach(function (m) {
-      if (m.district && districts.indexOf(m.district) === -1) districts.push(m.district);
+      if (m.mukim && mukims.indexOf(m.mukim) === -1) mukims.push(m.mukim);
     });
-    districts.sort().forEach(function (d) {
-      districtSel.appendChild(ui.el("option", { value: d }, [d]));
+    mukims.sort().forEach(function (d) {
+      mukimSel.appendChild(ui.el("option", { value: d }, [d]));
     });
 
     const fromDate = ui.el("input", {
@@ -119,7 +119,7 @@
     });
 
     row.appendChild(masjidSel);
-    row.appendChild(districtSel);
+    row.appendChild(mukimSel);
     row.appendChild(catSel);
     row.appendChild(statusSel);
 
@@ -180,7 +180,7 @@
       }
       events = ME.events.filterEvents(events, {
         masjid: masjidSel.value || null,
-        district: districtSel.value || null,
+        mukim: mukimSel.value || null,
         category: catSel.value || null,
         status: statusSel.value || null,
         q: searchBox.value
@@ -216,7 +216,7 @@
 
     let activeTab = "Hari Ini";
     masjidSel.addEventListener("change", refresh);
-    districtSel.addEventListener("change", refresh);
+    mukimSel.addEventListener("change", refresh);
     catSel.addEventListener("change", refresh);
     statusSel.addEventListener("change", refresh);
     searchBox.addEventListener("input", refresh);
@@ -383,18 +383,18 @@
     const qBox = ui.el("input", {
       id: "masjid-search",
       type: "search",
-      placeholder: "Cari masjid, daerah…",
+      placeholder: "Cari masjid, mukim…",
       "aria-label": "Cari masjid"
     });
-    const districtSel = ui.el("select", { id: "filter-district", "aria-label": "Tapis mengikut daerah" },
-      [ui.el("option", { value: "" }, ["Semua daerah"])]);
-    ME.masjids.districts().forEach(function (d) {
-      districtSel.appendChild(ui.el("option", { value: d }, [d]));
+    const mukimSel = ui.el("select", { id: "filter-mukim", "aria-label": "Tapis mengikut mukim" },
+      [ui.el("option", { value: "" }, ["Semua mukim"])]);
+    ME.masjids.mukims().forEach(function (d) {
+      mukimSel.appendChild(ui.el("option", { value: d }, [d]));
     });
 
     filters.appendChild(ui.el("label", { for: "masjid-search" }, ["Carian"]));
     filters.appendChild(qBox);
-    row.appendChild(districtSel);
+    row.appendChild(mukimSel);
     filters.appendChild(row);
     container.appendChild(filters);
 
@@ -405,7 +405,7 @@
 
     function refresh() {
       const results = ME.masjids.filterMasjids(qBox.value, {
-        district: districtSel.value || null
+        mukim: mukimSel.value || null
       });
       ME.masjids.renderGrid(gridBox, results, counts);
       announcer.textContent = results.length
@@ -414,7 +414,7 @@
     }
 
     qBox.addEventListener("input", refresh);
-    districtSel.addEventListener("change", refresh);
+    mukimSel.addEventListener("change", refresh);
     refresh();
   }
 
@@ -427,7 +427,7 @@
       return;
     }
     container.appendChild(ui.el("h1", {}, [masjid.name]));
-    const meta = [masjid.district, masjid.state].filter(Boolean).join(", ");
+    const meta = [masjid.mukim, masjid.state].filter(Boolean).join(", ");
     if (meta) container.appendChild(ui.el("p", { class: "muted" }, [meta]));
     if (masjid.address) container.appendChild(ui.el("p", {}, [masjid.address]));
 

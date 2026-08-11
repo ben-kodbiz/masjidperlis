@@ -27,7 +27,7 @@ validated BEFORE anything is written to data/:
     byte-for-byte untouched.
 
 Only the federated collections (masjids, events, speakers, categories) are
-imported. settings.json, districts.json and editors.json pass through
+imported. settings.json, mukims.json and editors.json pass through
 unchanged — maintain those via the admin tool or JSON.
 
 Usage:
@@ -56,7 +56,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
 
 from serve import (  # noqa: E402
-    district_id_for,
+    mukim_id_for,
     next_category_id,
     next_event_id,
     next_masjid_id,
@@ -189,7 +189,7 @@ def _resolve_feed_records(feed, kind, records, working, skipped):
         else:
             rec, errors = VALIDATORS[kind](fields)
             if not errors and kind == "masjids":
-                rec["district_id"] = district_id_for(rec.get("district"))
+                rec["mukim_id"] = mukim_id_for(rec.get("mukim"))
         if errors:
             skipped.append((name, kind, row_no, "; ".join(errors)))
             continue
@@ -276,7 +276,7 @@ def run(config_path, data_dir, strict=False, dry_run=False):
         working[fname] = read_json(data_root / fname, [])
     pass_through = {
         fname: read_json(data_root / fname, {} if fname == "settings.json" else [])
-        for fname in ("settings.json", "districts.json", "editors.json")
+        for fname in ("settings.json", "mukims.json", "editors.json")
     }
 
     skipped = []
