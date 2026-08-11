@@ -130,6 +130,7 @@ automatically when this repository is pushed to GitHub (see `deploy.yml`).
 - `ARCHITECTURE.md` — system architecture and design principles.
 - `TODO_AGENT.md` — staged build roadmap, definitions of done, and session history.
 - `DATA_SCHEMA.md` — canonical data format (all files, fields, ID rules, recurrence).
+- `DATA_ENTRY_GUIDE.md` — practical how-to: Google Sheets or local CSV/Excel → live site.
 - `ADMIN_GUIDE.md` — editor workflow: the panel, recurring events, statuses, validate/publish.
 - `DEPLOYMENT.md` — GitHub Pages deployment, first-time setup, custom domains, troubleshooting.
 - `SHEET_IMPORT.md` — Google Sheets adapter (no API key).

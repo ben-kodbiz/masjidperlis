@@ -2,6 +2,10 @@
 
 # Masjid Events Perlis — Google Sheets Adapter
 
+**New here?** The practical, step-by-step guide (column templates, Excel→CSV,
+deploying) is in `DATA_ENTRY_GUIDE.md`. This file is the technical reference
+for the adapter.
+
 **Stage 14.** An optional way to feed events (and reference data) into the
 canonical JSON data set from Google Sheets. It is an *adapter*:
 

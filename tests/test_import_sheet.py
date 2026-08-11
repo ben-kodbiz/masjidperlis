@@ -258,6 +258,30 @@ def test_dry_run_writes_nothing():
         shutil.rmtree(tmp, ignore_errors=True)
 
 
+def test_unquoted_comma_is_reported_not_crashing():
+    # A comma-separated value (e.g. unquoted "monday,friday") becomes extra
+    # CSV columns; the importer must fail with a clear message, never crash
+    # with a traceback or silently drop data.
+    tmp, data_dir = make_env()
+    header = COLS["events"]
+    row = ["", "Ceramah", "Masjid Alwi", "2026-08-20", "20:00", "21:00",
+           "Ustaz A", "Kuliah", "", "", "published", "weekly",
+           "monday,friday", "2026-08-20", "2026-12-31", "2026-08-28"]
+    # force the row unquoted so "monday,friday" splits into two CSV columns
+    (tmp / "events.csv").write_text(",".join(header) + "\n" + ",".join(row) + "\n", encoding="utf-8")
+    write_csv(tmp, "masjids.csv", COLS["masjids"], [[None, "Masjid Alwi", "Kangar", None, None, None, None, None, None]])
+    write_csv(tmp, "speakers.csv", COLS["speakers"], [])
+    write_csv(tmp, "categories.csv", COLS["categories"], [])
+    write_config(tmp)
+    result = run(tmp, data_dir)
+    try:
+        assert result.returncode == 1, result.stdout + result.stderr
+        assert "extra column" in result.stderr, result.stderr
+        assert "Traceback" not in result.stderr, result.stderr
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
 def main():
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
     failed = 0

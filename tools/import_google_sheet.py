@@ -121,9 +121,18 @@ def read_csv(stream):
         text = text.lstrip("\ufeff")
     reader = csv.DictReader(io.StringIO(text))
     rows = []
-    for row in reader:
+    for row_no, row in enumerate(reader, start=2):
         if row is None:
             continue
+        # csv.DictReader stores any extra (beyond-header) columns under key
+        # None as a list. Unquoted commas inside a field produce these, so
+        # report a clear error instead of crashing or silently dropping data.
+        extras = row.pop(None, None)
+        if extras and any((e or "").strip() for e in extras):
+            raise RuntimeError(
+                f"CSV row {row_no}: {len(extras)} extra column(s) — a field "
+                f"containing a comma must be quoted, e.g. \"monday,friday\" "
+                f"(got {extras[:3]!r}).")
         rows.append({str(k).strip(): (v or "").strip() for k, v in row.items()})
     return rows
 
