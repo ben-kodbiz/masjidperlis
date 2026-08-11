@@ -370,7 +370,7 @@ def wrap_page(page, body_html, scripts, seo_meta, base_prefix="../../"):
         + '<body data-page="{}"{}>\n'.format(page, seo_meta.get("body_data", ""))
         + '  <a class="skip-link" href="#main">Langkau ke kandungan</a>\n'
         + nav
-        + "\n\n  <main id=\"main\">\n"
+        + "\n\n  <main id=\"main\" tabindex=\"-1\">\n"
         + body_html
         + "\n  </main>\n"
         + FOOTER
@@ -544,12 +544,12 @@ def masjid_body(masjid, events, masjids_by_id, categories_by_id, speakers_by_id,
         links.append('<a class="btn btn-ghost" href="tel:{}">Hubungi</a>'.format(quote(tel)))
     if masjid.get("website"):
         links.append(
-            '<a class="btn btn-ghost" rel="noopener" target="_blank" href="{}">Laman web</a>'
+            '<a class="btn btn-ghost" rel="noopener" target="_blank" href="{}">Laman web<span class="vh"> (buka dalam tab baharu)</span></a>'
             .format(esc(masjid["website"])))
     if masjid.get("latitude") is not None and masjid.get("longitude") is not None:
         lat, lon = masjid["latitude"], masjid["longitude"]
         links.append(
-            '<a class="btn" rel="noopener" target="_blank" href="https://www.openstreetmap.org/?mlat={lat}&amp;mlon={lon}#map=16/{lat}/{lon}">Peta</a>'
+            '<a class="btn" rel="noopener" target="_blank" href="https://www.openstreetmap.org/?mlat={lat}&amp;mlon={lon}#map=16/{lat}/{lon}">Peta<span class="vh"> (buka dalam tab baharu)</span></a>'
             .format(lat=lat, lon=lon))
     links_html = '    <div class="masjid-links">{}</div>'.format("".join(links)) if links else ""
 
@@ -875,8 +875,8 @@ def main(argv=None):
         summary = text_summary(ev, masjid, speaker)
         share = (
             '  <div class="share">'
-            '<a class="btn btn-ghost" rel="noopener" target="_blank" href="{}">Kongsi WhatsApp</a>'
-            '<a class="btn btn-ghost" rel="noopener" target="_blank" href="{}">Kongsi Telegram</a>'
+            '<a class="btn btn-ghost" rel="noopener" target="_blank" href="{}">Kongsi WhatsApp<span class="vh"> (buka dalam tab baharu)</span></a>'
+            '<a class="btn btn-ghost" rel="noopener" target="_blank" href="{}">Kongsi Telegram<span class="vh"> (buka dalam tab baharu)</span></a>'
             "</div>"
         ).format(whatsapp_url(summary + "\n" + canonical), telegram_url(summary, canonical))
         body = body.replace("  </article>", "  </article>\n" + share)

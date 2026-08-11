@@ -26,6 +26,12 @@
     return ui.el("h2", { class: "section-title" }, [title]);
   }
 
+  // Screen-reader live region announcing filter/result changes ("role=status"
+  // implies aria-live polite; content is visually hidden).
+  function statusRegion() {
+    return ui.el("p", { class: "vh", role: "status" });
+  }
+
   // ---- Homepage ----
   function renderHome(container, data) {
     const now = ui.todayKL();
@@ -153,6 +159,8 @@
 
     const listBox = ui.el("div");
     container.appendChild(listBox);
+    const announcer = statusRegion();
+    container.appendChild(announcer);
 
     function setTab(label) {
       activeTab = label;
@@ -178,6 +186,7 @@
         q: searchBox.value
       });
       ME.events.renderList(listBox, events);
+      announcer.textContent = ui.resultCountMessage(events.length);
     }
 
     // Occurrences within [from, to] (to == null means open-ended, capped by 2
@@ -264,6 +273,10 @@
     const summary = ME.share.textSummary(ev);
     const url = ME.share.eventUrl(ev.id);
     const shareWrap = ui.el("div", { class: "share" });
+    const shareAnnouncer = statusRegion();
+    function announce(msg) {
+      shareAnnouncer.textContent = msg;
+    }
 
     const copyLinkBtn = ui.el("button", {
       type: "button",
@@ -271,6 +284,7 @@
       onclick: function () {
         ME.share.copyText(url).then(function (ok) {
           copyLinkBtn.textContent = ok ? "Pautan disalin" : "Sila salin tapal sendiri";
+          announce(ok ? "Pautan disalin." : "Penyalinan tidak disokong.");
           setTimeout(function () { copyLinkBtn.textContent = "Salin pautan"; }, 2000);
         });
       }
@@ -282,6 +296,7 @@
       onclick: function () {
         ME.share.copyText(summary + "\n" + url).then(function (ok) {
           copyTextBtn.textContent = ok ? "Teks disalin" : "Sila salin teks sendiri";
+          announce(ok ? "Teks disalin." : "Penyalinan tidak disokong.");
           setTimeout(function () { copyTextBtn.textContent = "Salin teks acara"; }, 2000);
         });
       }
@@ -295,14 +310,14 @@
       rel: "noopener",
       target: "_blank",
       href: ME.share.whatsappUrl(summary + "\n" + url)
-    }, ["Kongsi WhatsApp"]);
+    }, ["Kongsi WhatsApp", ui.el("span", { class: "vh" }, [" (buka dalam tab baharu)"])]);
 
     const tg = ui.el("a", {
       class: "btn btn-ghost",
       rel: "noopener",
       target: "_blank",
       href: ME.share.telegramUrl(summary, url)
-    }, ["Kongsi Telegram"]);
+    }, ["Kongsi Telegram", ui.el("span", { class: "vh" }, [" (buka dalam tab baharu)"])]);
 
     shareWrap.appendChild(wa);
     shareWrap.appendChild(tg);
@@ -317,9 +332,11 @@
           url: url
         }).then(function () {
           nativeBtn.textContent = "Dikongsi";
+          announce("Dikongsi.");
           setTimeout(function () { nativeBtn.textContent = "Kongsi melalui apl lain"; }, 2000);
         }, function () {
           nativeBtn.textContent = "Kongsi tidak disokong";
+          announce("Kongsi tidak disokong.");
           setTimeout(function () { nativeBtn.textContent = "Kongsi melalui apl lain"; }, 2000);
         });
       }
@@ -327,6 +344,7 @@
 
     shareWrap.appendChild(nativeBtn);
     container.appendChild(shareWrap);
+    container.appendChild(shareAnnouncer);
 
     // ---- Calendar (.ics, Stage 8) ----
     const icsWrap = ui.el("div", { class: "share" });
@@ -382,12 +400,17 @@
 
     const gridBox = ui.el("div");
     container.appendChild(gridBox);
+    const announcer = statusRegion();
+    container.appendChild(announcer);
 
     function refresh() {
       const results = ME.masjids.filterMasjids(qBox.value, {
         district: districtSel.value || null
       });
       ME.masjids.renderGrid(gridBox, results, counts);
+      announcer.textContent = results.length
+        ? results.length + " masjid dipaparkan."
+        : "Tiada masjid ditemui.";
     }
 
     qBox.addEventListener("input", refresh);
@@ -417,7 +440,7 @@
           rel: "noopener",
           target: "_blank",
           href: b.href
-        }, [b.label]));
+        }, [b.label, ui.el("span", { class: "vh" }, [" (buka dalam tab baharu)"])]));
       });
     }
     if (masjid.contact) {
@@ -434,7 +457,7 @@
         rel: "noopener",
         target: "_blank",
         href: masjid.website
-      }, ["Laman web"]));
+      }, ["Laman web", ui.el("span", { class: "vh" }, [" (buka dalam tab baharu)"])]));
     }
     if (sub.childNodes.length) container.appendChild(sub);
 

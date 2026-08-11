@@ -101,6 +101,15 @@
     return start + end;
   }
 
+  // Screen-reader announcement for filtered result lists.
+  // Renderers put the message into an aria-live="polite" region (role=status);
+  // the message itself stays pure so it is unit-testable without a browser.
+  function resultCountMessage(count) {
+    if (count <= 0) return "Tiada acara ditemui.";
+    if (count === 1) return "1 acara dipaparkan.";
+    return count + " acara dipaparkan.";
+  }
+
   ME.ui = {
     esc: esc,
     el: el,
@@ -108,7 +117,8 @@
     formatDate: formatDate,
     todayKL: todayKL,
     addDays: addDays,
-    eventWhen: eventWhen
+    eventWhen: eventWhen,
+    resultCountMessage: resultCountMessage
   };
 
   // Shared status display helper used by events.js and masjids.js.
