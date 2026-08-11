@@ -43,6 +43,14 @@ jobs:
             --site-url "${{ steps.configure.outputs.base_url }}/" \
             --version "${{ github.sha }}"
 
+      - name: Minify JS/CSS for the deployed artifact
+        run: |
+          python3 tools/minify_assets.py public/js/*.js public/css/*.css
+
+      - name: Gated performance check on the built artifact
+        run: |
+          python3 tools/perf_report.py
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:

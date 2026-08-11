@@ -49,6 +49,16 @@ jobs:
           python3 tests/test_build_site.py
           python3 tests/test_admin.py
           python3 tests/test_import_sheet.py
+          python3 tests/test_federate.py
+          python3 tests/test_a11y.py
+          python3 tests/test_perf.py
+          python3 tests/test_security.py
+
+      - name: Performance budget gate
+        run: python3 tools/perf_report.py
+
+      - name: Security audit
+        run: python3 tools/security_audit.py
 
       - name: JavaScript test suites
         run: |
@@ -57,6 +67,7 @@ jobs:
           node tests/test_share.js
           node tests/test_ics.js
           node tests/test_maps.js
+          node tests/test_a11y.js
 
       - name: JavaScript syntax check
         run: |
