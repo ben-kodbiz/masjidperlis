@@ -34,6 +34,29 @@ Never commit any of the following to the repository:
 
 Sensitive credentials belong in GitHub Actions Secrets or another secure server-side mechanism. If a feature requires a secret in browser JavaScript, the architecture must be reconsidered.
 
+### Federated feed headers
+
+`tools/federate.py` REST/JSON-URL feeds may send custom HTTP headers. Values
+are expanded from the environment at run time (`"Authorization": "Bearer
+${FEED_API_TOKEN}"`); a literal token must never be placed in a committed
+config file. `feeds.example.json` documents the placeholders only.
+
+### Deployment boundary
+
+The admin/editing application (`admin/`, `tools/serve.py`) is a local,
+developer-only tool. It binds to `127.0.0.1`, holds no credentials, and lives
+**outside** `public/` so it can never be uploaded to GitHub Pages. The deploy
+artifact is exactly `public/`, which contains no backend code, admin pages,
+secrets, or third-party scripts.
+
+### Automated audit
+
+`tools/security_audit.py` runs in CI (and `tests/test_security.py`) and fails
+the build on: committed secret patterns, plain-http external URLs, remote
+`<script>` tags, unsafe rendering sinks (`eval`, `document.write`,
+`innerHTML`) in the public site, unescaped admin id attributes, and a broken
+deploy boundary.
+
 ### Public site
 
 The public application must not include backend code, admin credentials, secrets, or third-party scripts that transmit data to third parties.

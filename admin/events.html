@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="admin.css">
 </head>
 <body data-page="events">
+  <a class="skip-link" href="#main">Langkau ke kandungan</a>
   <header class="admin-header">
     <div class="inner">
       <a class="brand" href="index.html">Panel Pengurusan<small>Masjid Events Perlis</small></a>
@@ -24,7 +25,7 @@
     </div>
   </header>
 
-  <main>
+  <main id="main" tabindex="-1">
     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
       <h1>Acara</h1>
       <a class="btn" href="event-editor.html">+ Cipta acara</a>
@@ -38,6 +39,7 @@
       <input type="search" id="f-q" placeholder="Cari tajuk / penceramah…" aria-label="Cari">
       <button type="button" class="btn btn-ghost" id="f-clear">Set semula</button>
     </div>
+    <p id="result-announcer" class="vh" role="status"></p>
 
     <section class="card">
       <div class="table-scroll">
@@ -128,14 +130,14 @@
           var spk = name(s, e.speaker_id);
           var canPublish = e.status !== "published";
           var buttons = "";
-          buttons += '<a class="btn btn-ghost btn-sm" href="event-editor.html?id=' + e.id + '">Edit</a>';
-          if (canPublish) buttons += '<button type="button" class="btn btn-sm" data-act="publish" data-id="' + e.id + '">Terbit</button>';
+          buttons += '<a class="btn btn-ghost btn-sm" href="event-editor.html?id=' + A.esc(e.id) + '">Edit</a>';
+          if (canPublish) buttons += '<button type="button" class="btn btn-sm" data-act="publish" data-id="' + A.esc(e.id) + '">Terbit</button>';
           if (e.status === "published" || e.status === "draft") {
-            buttons += '<button type="button" class="btn btn-ghost btn-sm" data-act="postpone" data-id="' + e.id + '">Tunda</button>';
-            buttons += '<button type="button" class="btn btn-ghost btn-sm" data-act="cancel" data-id="' + e.id + '">Batal</button>';
+            buttons += '<button type="button" class="btn btn-ghost btn-sm" data-act="postpone" data-id="' + A.esc(e.id) + '">Tunda</button>';
+            buttons += '<button type="button" class="btn btn-ghost btn-sm" data-act="cancel" data-id="' + A.esc(e.id) + '">Batal</button>';
           }
-          buttons += '<button type="button" class="btn btn-ghost btn-sm" data-act="complete" data-id="' + e.id + '">Arkib</button>';
-          buttons += '<button type="button" class="btn btn-danger btn-sm" data-act="delete" data-id="' + e.id + '">Padam</button>';
+          buttons += '<button type="button" class="btn btn-ghost btn-sm" data-act="complete" data-id="' + A.esc(e.id) + '">Arkib</button>';
+          buttons += '<button type="button" class="btn btn-danger btn-sm" data-act="delete" data-id="' + A.esc(e.id) + '">Padam</button>';
           return "<tr>" +
             "<td>" + A.badge(e.status) + "</td>" +
             "<td><strong>" + A.esc(e.title) + "</strong>" + (e.recurrence ? '<div class="muted" style="font-size:.8rem">berulang mingguan</div>' : "") + "</td>" +
@@ -147,6 +149,8 @@
           "</tr>";
         }).join("");
         document.getElementById("empty").hidden = rows.length > 0;
+        document.getElementById("result-announcer").textContent =
+          rows.length ? rows.length + " acara dipaparkan." : "Tiada acara ditemui.";
       }
 
       fQ.addEventListener("input", function () { state.q = fQ.value; render(); });

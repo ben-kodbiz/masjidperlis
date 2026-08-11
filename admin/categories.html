@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="admin.css">
 </head>
 <body data-page="categories">
+  <a class="skip-link" href="#main">Langkau ke kandungan</a>
   <header class="admin-header">
     <div class="inner">
       <a class="brand" href="index.html">Panel Pengurusan<small>Masjid Events Perlis</small></a>
@@ -24,7 +25,7 @@
     </div>
   </header>
 
-  <main>
+  <main id="main" tabindex="-1">
     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
       <h1>Kategori</h1>
       <button type="button" class="btn" id="btn-new">+ Kategori baru</button>
@@ -81,8 +82,8 @@
           return "<tr>" +
             "<td><strong>" + A.esc(c.name) + "</strong></td>" +
             "<td>" + count + "</td>" +
-            '<td><button type="button" class="btn btn-ghost btn-sm" data-act="edit" data-id="' + c.id + '">Edit</button>' +
-            '<button type="button" class="btn btn-danger btn-sm" data-act="delete" data-id="' + c.id + '">Padam</button></td>' +
+            '<td><button type="button" class="btn btn-ghost btn-sm" data-act="edit" data-id="' + A.esc(c.id) + '">Edit</button>' +
+            '<button type="button" class="btn btn-danger btn-sm" data-act="delete" data-id="' + A.esc(c.id) + '">Padam</button></td>' +
           "</tr>";
         }).join("");
         document.getElementById("empty").hidden = d.categories.length > 0;

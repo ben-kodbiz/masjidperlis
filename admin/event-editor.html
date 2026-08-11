@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="admin.css">
 </head>
 <body data-page="events">
+  <a class="skip-link" href="#main">Langkau ke kandungan</a>
   <header class="admin-header">
     <div class="inner">
       <a class="brand" href="index.html">Panel Pengurusan<small>Masjid Events Perlis</small></a>
@@ -24,7 +25,7 @@
     </div>
   </header>
 
-  <main>
+  <main id="main" tabindex="-1">
     <h1 id="page-title">Cipta acara</h1>
     <div id="alert" class="alert" role="alert"></div>
 
@@ -153,7 +154,7 @@
       function fillSelect(id, list, value) {
         var el = document.getElementById(id);
         el.innerHTML = list.map(function (r) {
-          return '<option value="' + r.id + '"' + (r.id === value ? " selected" : "") + ">" + A.esc(r.name) + "</option>";
+          return '<option value="' + A.esc(r.id) + '"' + (r.id === value ? " selected" : "") + ">" + A.esc(r.name) + "</option>";
         }).join("");
       }
 

@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="admin.css">
 </head>
 <body data-page="speakers">
+  <a class="skip-link" href="#main">Langkau ke kandungan</a>
   <header class="admin-header">
     <div class="inner">
       <a class="brand" href="index.html">Panel Pengurusan<small>Masjid Events Perlis</small></a>
@@ -24,7 +25,7 @@
     </div>
   </header>
 
-  <main>
+  <main id="main" tabindex="-1">
     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
       <h1>Penceramah</h1>
       <button type="button" class="btn" id="btn-new">+ Penceramah baru</button>
@@ -87,8 +88,8 @@
             "<td><strong>" + A.esc(s.name) + "</strong></td>" +
             "<td>" + A.esc(s.description || "—") + "</td>" +
             "<td>" + count + "</td>" +
-            '<td><button type="button" class="btn btn-ghost btn-sm" data-act="edit" data-id="' + s.id + '">Edit</button>' +
-            '<button type="button" class="btn btn-danger btn-sm" data-act="delete" data-id="' + s.id + '">Padam</button></td>' +
+            '<td><button type="button" class="btn btn-ghost btn-sm" data-act="edit" data-id="' + A.esc(s.id) + '">Edit</button>' +
+            '<button type="button" class="btn btn-danger btn-sm" data-act="delete" data-id="' + A.esc(s.id) + '">Padam</button></td>' +
           "</tr>";
         }).join("");
         document.getElementById("empty").hidden = d.speakers.length > 0;
