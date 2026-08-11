@@ -24,12 +24,15 @@ def test_audit_clean_on_committed_repo():
 
 
 def test_secret_patterns_catch_credentials():
+    # Assembled at runtime from fragments so no literal secret-shaped string
+    # ever appears in the committed file (GitHub push protection + the
+    # repo-wide audit scan raw text, so the fixtures must not be realistic).
     samples = [
-        "token=ghp_" + "A" * 30,  # ::gitleaks
-        "x-api-key: REDACTED",  # ::gitleaks
-        "-----BEGIN REDACTED KEY-----\nMIIE",  # ::gitleaks
-        "stripe_token_redacted",  # ::gitleaks
-        'client_secret = "REDACTED"',  # ::gitleaks
+        "token=" + "ghp_" + "A" * 30,
+        "x-api-key: " + "0" * 40,
+        "-----BEGIN " + "RSA" + " PRIVATE KEY-----" + "\nMIIE",
+        "sk_" + "live_" + "0" * 32,
+        'client_secret = "' + "0" * 12 + '"',
     ]
     for s in samples:
         assert sa.SECRET_RE.search(s) is not None, "not flagged: {!r}".format(s[:40])

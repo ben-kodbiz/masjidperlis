@@ -1503,7 +1503,7 @@ Tests:
   - tools/security_audit.py (new): secrets, https-only, no remote scripts,
     public safe sinks, admin id attrs escaped, deploy boundary. CLEAN.
   - tests/test_security.py (new) -> 7/7: audit clean on repo; credential
-    patterns catch ghp_/api-key/RSA/sk_/client_secret; placeholders/docs not
+    patterns catch tokens/RSA/Stripe-style keys/client secrets; placeholders/docs not
     flagged; public has no innerHTML; admin id attrs escaped; boundary holds;
     no secrets in public/admin.
   - All existing suites re-run green (validate/build/admin/import/federate/
@@ -1599,7 +1599,7 @@ Completed:
 Regression found & fixed:
   - tools/security_audit.py scans git-tracked files. Once tests/test_security.py
     was committed (Stage 20), its fake-credential fixtures (x-api-key, RSA key,
-    stripe_token_redacted, client_secret) started tripping the audit's own secret scan ->
+    Stripe-style key, client_secret) started tripping the audit's own secret scan ->
     SECURITY AUDIT FAILED (and CI would have failed too). Fixed by tagging the
     fixture lines with the audit's existing inline-ignore annotation
     (# ::gitleaks, security_audit.py scan_secrets line-skip). Audit now CLEAN,
