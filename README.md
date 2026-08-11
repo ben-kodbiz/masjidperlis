@@ -76,6 +76,13 @@ schedule in one form) remains at `admin/add-masjid.html`.
 
 ## Importing data
 
+**Daily driver (recommended):** the `data-entry/` folder holds ready-made CSV
+templates — open them in Excel, add rows, run:
+
+```bash
+./data-entry/update.sh
+```
+
 Google Sheets (published-to-web CSV export) — no API key:
 
 ```bash
@@ -89,9 +96,9 @@ Google Sheets) aggregated in one run:
 python3 tools/federate.py --config tools/feeds.example.json --dry-run
 ```
 
-Both tools merge add/update-by-id (never delete existing data), report skipped
-rows, and validate the full result before writing anything. See
-`SHEET_IMPORT.md` and `FEDERATION.md`.
+All of these merge add/update-by-id (never delete existing data), report
+skipped rows, and validate the full result before writing anything. See
+`DATA_ENTRY_GUIDE.md`, `SHEET_IMPORT.md` and `FEDERATION.md`.
 
 ## Performance
 

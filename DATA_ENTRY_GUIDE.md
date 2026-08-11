@@ -33,8 +33,9 @@ needed for the Google Sheets route either.
 
 ## 1. The four data files and their order
 
-Every import needs **all four** sources present (even if a tab has just the
-header row). They are processed in this order:
+The importer understands four kinds of data. You can provide **all four, or
+just the ones you maintain** — anything without a source is left untouched.
+When present, they are processed in this order:
 
 1. **Kategori** (categories)
 2. **Penceramah** (speakers)
@@ -110,6 +111,11 @@ python3 tools/import_google_sheet.py --strict
 You can point each source at a local CSV instead of a Google tab. This is the
 same tool, just configured with `"file"` instead of `"gid"`.
 
+> **Simplest path (recommended):** the repo ships a ready-made
+> **`data-entry/`** folder exactly for this. Open the four CSVs in Excel, add
+> your rows under the header, then run `./data-entry/update.sh`. No config to
+> write. See `data-entry/README.md`.
+
 ### 3.1 Prepare the files
 
 Create four CSV files — one per data file — in a folder, e.g. `my-data/`:
@@ -142,16 +148,30 @@ Make a config like this (or any name; pass it with `--config`):
 }
 ```
 
-The four keys **must** be named `categories`, `speakers`, `masjids`, `events`
-(the importer requires all four). The `tab` label and the file *names* are up
-to you. Use the same `columns` maps as in `tools/sheets_import.example.json`.
+The keys **must** be named `categories`, `speakers`, `masjids`, `events`. The
+file *names* are up to you, and `file` paths are resolved **relative to the
+config file's folder**, so you can keep the folder anywhere and run from any
+directory. Use the same `columns` maps as in `tools/sheets_import.example.json`.
+
+Only configure the sources you actually maintain — a missing source is left
+untouched (so you can, for example, import just `events` every week without
+touching masjids/speakers/categories).
 
 ### 3.3 Run
 
 ```bash
+# daily driver: ready-made folder (import + validate)
+./data-entry/update.sh
+
+# or with your own config
 python3 tools/import_google_sheet.py --config my-config.json --dry-run
 python3 tools/import_google_sheet.py --config my-config.json
 ```
+
+> When no `--config` is given, the tool automatically prefers
+> `data-entry/config.json` if it exists (falling back to the Google Sheets
+> config). So with the shipped folder you can even run the bare
+> `python3 tools/import_google_sheet.py`.
 
 ---
 
@@ -274,7 +294,7 @@ performance budgets, and publishes. Within a minute or two your live site at
 | ------- | --- |
 | `cannot fetch ... HTTP 400` | The sheet isn't published to the web, or the gid is wrong. Re-publish and double-check the gid. |
 | `no spreadsheet_id configured` | Set `spreadsheet_id` or use `"file"` + `--config`. |
-| `config has no source for: categories, speakers` | All four sources are required — add each tab/file (an empty header-only file is fine). |
+| `config has no source for: categories, speakers` | Outdated error — sources are now optional; a missing source is kept unchanged. Re-pull the latest code. |
 | `ABORTED — merged data is invalid` | Read the listed problems (bad date, missing masjid, unknown district…), fix the rows, re-run. |
 | Row skipped: `unknown masjid` | The masjid name/id isn't in the Masjids tab (or is misspelled). |
 | `Invalid UTF-8` / mojibake in names | Re-save the CSV as **UTF-8** (see section 4). |

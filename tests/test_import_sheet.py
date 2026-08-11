@@ -282,6 +282,62 @@ def test_unquoted_comma_is_reported_not_crashing():
         shutil.rmtree(tmp, ignore_errors=True)
 
 
+def test_partial_import_events_only():
+    # Only the events source is configured; the other collections must pass
+    # through unchanged (daily-driver scenario: maintain only events).
+    tmp, data_dir = make_env()
+    (tmp / "config.json").write_text(json.dumps({
+        "spreadsheet_id": "",
+        "sources": {
+            "events": {"file": "acara.csv", "id_column": "id",
+                       "columns": MAP["events"]},
+        },
+    }, ensure_ascii=False), encoding="utf-8")
+    (tmp / "acara.csv").write_text(csv_str(COLS["events"], [
+        [None, "Acara Sahaja", "Masjid Alwi", "2026-09-01", "09:00", "10:00",
+         None, None, None, None, "published", None, None, None, None, None],
+    ]), encoding="utf-8")
+    before = read_json(data_dir, "masjids.json")
+    result = run(tmp, data_dir)
+    try:
+        assert result.returncode == 0, result.stdout + result.stderr
+        assert "kept unchanged" in result.stdout, result.stdout
+        assert read_json(data_dir, "masjids.json") == before
+        events = read_json(data_dir, "events.json")
+        assert any(e["title"] == "Acara Sahaja" for e in events)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def test_relative_file_paths_resolve_against_config_dir():
+    # A config that uses bare relative "file" names must resolve them against
+    # the config file's directory, not the CWD.
+    tmp, data_dir = make_env()
+    cfg_dir = tmp / "cfg"
+    cfg_dir.mkdir()
+    (cfg_dir / "acara.csv").write_text(csv_str(COLS["events"], [
+        [None, "Acara Relatif", "Masjid Alwi", "2026-09-02", "10:00", "11:00",
+         None, None, None, None, "published", None, None, None, None, None],
+    ]), encoding="utf-8")
+    (cfg_dir / "config.json").write_text(json.dumps({
+        "spreadsheet_id": "",
+        "sources": {
+            "events": {"file": "acara.csv", "id_column": "id",
+                       "columns": MAP["events"]},
+        },
+    }, ensure_ascii=False), encoding="utf-8")
+    result = subprocess.run(
+        [sys.executable, str(IMPORTER), "--config", str(cfg_dir / "config.json"),
+         "--data-dir", str(data_dir)],
+        capture_output=True, text=True,
+    )
+    try:
+        assert result.returncode == 0, result.stdout + result.stderr
+        assert any(e["title"] == "Acara Relatif" for e in read_json(data_dir, "events.json"))
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
 def main():
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
     failed = 0

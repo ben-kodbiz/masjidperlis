@@ -1,0 +1,59 @@
+{
+  "spreadsheet_id": "",
+  "sources": {
+    "categories": {
+      "file": "1-kategori.csv",
+      "id_column": "id",
+      "columns": {
+        "id": "id",
+        "Nama": "name"
+      }
+    },
+    "speakers": {
+      "file": "2-penceramah.csv",
+      "id_column": "id",
+      "columns": {
+        "id": "id",
+        "Nama": "name",
+        "Penerangan": "description"
+      }
+    },
+    "masjids": {
+      "file": "3-masjids.csv",
+      "id_column": "id",
+      "columns": {
+        "id": "id",
+        "Nama": "name",
+        "Daerah": "district",
+        "Negeri": "state",
+        "Alamat": "address",
+        "Latitud": "latitude",
+        "Longitud": "longitude",
+        "Kenalan": "contact",
+        "Laman web": "website"
+      }
+    },
+    "events": {
+      "file": "4-acara.csv",
+      "id_column": "id",
+      "columns": {
+        "id": "id",
+        "Tajuk": "title",
+        "Masjid": "masjid_id",
+        "Tarikh": "date",
+        "Mula": "start_time",
+        "Tamat": "end_time",
+        "Penceramah": "speaker_id",
+        "Kategori": "category_id",
+        "Lokasi": "location",
+        "Penerangan": "description",
+        "Status": "status",
+        "Jenis ulangan": "recurrence_type",
+        "Hari ulangan": "recurrence_days",
+        "Mula ulangan": "recurrence_start_date",
+        "Tamat ulangan": "recurrence_end_date",
+        "Pengecualian": "recurrence_exceptions"
+      }
+    }
+  }
+}

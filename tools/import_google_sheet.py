@@ -91,16 +91,29 @@ ORDER_OF_KINDS = ("categories", "speakers", "masjids", "events")
 
 
 class ImportConfig:
-    def __init__(self, config, spreadsheet_id_override=None, strict=False, dry_run=False, data_dir=None):
+    def __init__(self, config, spreadsheet_id_override=None, strict=False, dry_run=False,
+                 data_dir=None, config_path=None):
         self.config = config
         self.spreadsheet_id = spreadsheet_id_override or config.get("spreadsheet_id") or ""
         self.strict = strict
         self.dry_run = dry_run
         self.data_dir = Path(data_dir) if data_dir else ROOT / "data"
+        self.config_dir = Path(config_path).resolve().parent if config_path else None
         self.paths = {f: self.data_dir / f for f in DATA_FILES}
 
     def source(self, kind):
         return self.config.get("sources", {}).get(kind)
+
+    def source_file(self, kind):
+        """Local CSV path for a source, resolved relative to the config file
+        when possible (so 'file' entries work regardless of the CWD)."""
+        source = self.source(kind)
+        if not source or not source.get("file"):
+            return None
+        path = Path(source["file"])
+        if not path.is_absolute() and self.config_dir is not None:
+            path = self.config_dir / path
+        return path.resolve()
 
 
 def read_json(path, fallback=[]):
@@ -151,12 +164,12 @@ def fetch_tab_csv(spreadsheet_id, gid):
         raise RuntimeError(f"cannot fetch {url}: {exc}") from exc
 
 
-def load_rows(source, spreadsheet_id):
+def load_rows(source, spreadsheet_id, file_path=None):
     """Return (rows, source_label) for one sheet source."""
     if source is None:
         return None, None
-    if source.get("file"):
-        path = Path(source["file"]).resolve()
+    if source.get("file") or file_path is not None:
+        path = file_path or Path(source["file"]).resolve()
         if not path.is_file():
             raise RuntimeError(f"local file not found: {path}")
         with open(path, "r", encoding="utf-8-sig") as fh:
@@ -220,12 +233,14 @@ class Importer:
     # -- loading ----------------------------------------------------------
 
     def load_all(self):
-        missing = [k for k in KINDS if self.cfg.source(k) is None]
-        if missing:
-            raise RuntimeError("config has no source for: " + ", ".join(missing))
         for kind in ORDER_OF_KINDS:
             source = self.cfg.source(kind)
-            rows, label = load_rows(source, self.cfg.spreadsheet_id)
+            if source is None:
+                self.loaded[kind] = None
+                self.report.append(f"{kind}: no source — kept unchanged")
+                continue
+            rows, label = load_rows(source, self.cfg.spreadsheet_id,
+                                    file_path=self.cfg.source_file(kind))
             self.loaded[kind] = rows
             self.report.append(f"{kind}: {len(rows)} row(s) read from {label}")
         return self
@@ -242,14 +257,15 @@ class Importer:
         merged = {k: list(existing[f"{k}.json"]) for k in KINDS}
         skipped = {k: [] for k in KINDS}
 
-        # 1) categories  (resolved first for event.category refs)
-        merged["categories"] = self._normalize_kind("categories", existing, skipped)
-        # 2) speakers
-        merged["speakers"] = self._normalize_kind("speakers", existing, skipped)
-        # 3) masjids
-        merged["masjids"] = self._normalize_kind("masjids", existing, skipped)
-        # 4) events   (may reference the above via id or name)
-        merged["events"] = self._normalize_events(existing, merged, skipped)
+        # Kinds without a configured source pass through unchanged (partial
+        # imports: a daily driver may only maintain events, for example).
+        for kind in ORDER_OF_KINDS:
+            if self.loaded[kind] is None:
+                continue
+            if kind == "events":
+                merged["events"] = self._normalize_events(existing, merged, skipped)
+            else:
+                merged[kind] = self._normalize_kind(kind, existing, skipped)
 
         return {f"{k}.json": merged[k] for k in KINDS}, skipped
 
@@ -473,8 +489,11 @@ def main(argv=None):
     if args.config:
         config_path = Path(args.config)
     else:
-        default = ROOT / "tools" / "sheets_import.json"
-        config_path = default if default.exists() else ROOT / "tools" / "sheets_import.example.json"
+        # Default chain: Google-sheet config -> daily-driver local CSV config.
+        candidates = [ROOT / "tools" / "sheets_import.json",
+                      ROOT / "data-entry" / "config.json",
+                      ROOT / "tools" / "sheets_import.example.json"]
+        config_path = next((c for c in candidates if c.exists()), candidates[-1])
     if not config_path.is_file():
         print(f"error: config not found: {config_path}", file=sys.stderr)
         return 2
@@ -484,7 +503,7 @@ def main(argv=None):
 
     cfg = ImportConfig(config, spreadsheet_id_override=args.spreadsheet_id,
                        strict=args.strict, dry_run=args.dry_run,
-                       data_dir=args.data_dir)
+                       data_dir=args.data_dir, config_path=config_path)
     try:
         return Importer(cfg).run()
     except RuntimeError as exc:
