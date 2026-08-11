@@ -31,6 +31,25 @@ python3 -m http.server 8000 --directory public
 python3 tools/validate_data.py
 ```
 
+## Running the checks
+
+Everything CI runs can be run locally:
+
+```bash
+python3 tools/validate_data.py          # canonical data
+python3 tests/test_validate.py          # Python test suites (validate,
+python3 tests/test_build_site.py        #   build, admin, import, federate,
+python3 tests/test_admin.py             #   a11y, perf, security)
+python3 tests/test_import_sheet.py
+python3 tests/test_federate.py
+python3 tests/test_a11y.py
+python3 tests/test_perf.py
+python3 tests/test_security.py
+node tests/test_*.js                    # JS module tests
+python3 tools/perf_report.py            # performance budget gate
+python3 tools/security_audit.py         # security audit
+```
+
 ## Pull requests
 
 - Keep changes focused and small.

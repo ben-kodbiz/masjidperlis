@@ -368,11 +368,29 @@ Introduce organization/ownership concept (State -> District -> Masjid -> Editors
 
 Allow multiple event feeds (JSON URL, Git repo, Google Sheets export, REST API) to be aggregated. All sources normalize into the canonical schema.
 
+### Acceptance
+- [x] `tools/federate.py` aggregates multiple feeds in one run (config-driven).
+- [x] Feed types: `local-json` (Git-repo workspace JSON), `json-url`/`rest` (HTTP JSON, env-expanded headers so tokens never live in config), `google-sheet` (reuses the sheet adapter in-process).
+- [x] All sources normalize to the canonical schema; reference cells resolve by id or display name, including across feeds.
+- [x] Merge never deletes existing data (add/update by id); invalid rows are skipped and reported.
+- [x] The full merged set is validated before any write; failure leaves `data/` untouched. `--dry-run` / `--strict` supported.
+- [x] Config example (`tools/feeds.example.json`), `FEDERATION.md`, tests, CI wiring and docs updated.
+
 ---
 
 # 22. Stage 18 — Accessibility
 
 Audit keyboard navigation, headings, labels, focus states, contrast, screen-reader labels, accessible button names, no color-only information.
+
+### Acceptance
+- [x] Skip links on every page (public + admin) point at a focusable `<main id="main" tabindex="-1">`.
+- [x] Exactly one `<h1>` on content pages; heading hierarchy flows h1 → h2 → h3.
+- [x] Every `<input>`/`<select>`/`<textarea>` has a label or accessible name.
+- [x] Visible `:focus-visible` outline everywhere; card links also change border on focus; `prefers-reduced-motion` respected.
+- [x] Key text/foreground colour pairs meet ≥ 4.5:1 contrast (verified by CSP-pair analysis in the session report).
+- [x] Screen readers: live `role="status"` regions announce filter/result and share/copy outcomes; `role="alert"` on admin notices.
+- [x] `target="_blank"` links carry `rel="noopener"` and an accessible "buka dalam tab baharu" note; no colour-only information (status badges always including text).
+- [x] Automated audit: `tests/test_a11y.py` (static HTML) + `tests/test_a11y.js` (live-region helper), wired into CI.
 
 ---
 
@@ -380,17 +398,43 @@ Audit keyboard navigation, headings, labels, focus states, contrast, screen-read
 
 Target: small initial download, minimal JS, no unnecessary deps, compressed assets, lazy loading, no large frameworks. Measure HTML/CSS/JS/JSON/image sizes and request counts.
 
+### Acceptance
+- [x] Measured every page's payload and request count (`tools/perf_report.py`): ≈ 41 kB raw / ≈ 13–15 kB gzipped initial load, 13–15 requests.
+- [x] Deploy-time conservative minifier `tools/minify_assets.py` strips comments/blank lines from `public/js` + `public/css` in the artifact (source stays readable); JS output verified with `node --check`.
+- [x] No large frameworks, no extra deps, no page images; per-page scripts already only load what each page needs (verified: event adds share+ics, masjid adds maps).
+- [x] Compression: host serves automatic gzip/brotli; budget tool approximates gzip so the real transferred size is visible.
+- [x] Budgets enforced in CI (validate.yml + deploy.yml): initial ≤ 80 kB raw / 30 kB gzip, ≤ 15 requests, ≤ 60 kB JS, ≤ 20 kB CSS.
+- [x] Tests (`tests/test_perf.py`): minifier comment/string/regex safety + idempotency + node --check on every minified module; budget gate & report output.
+
 ---
 
 # 24. Stage 20 — Security Review
 
 Audit: no secrets in repo/frontend, no unsafe HTML injection, escape user text, safe external links, no client-side admin credentials, minimized workflow permissions, review dependencies, no unnecessary third-party scripts. Update `SECURITY.md`.
 
+### Acceptance
+- [x] Secret scan across all tracked files: nothing committed; `feeds.example.json` uses `${NAME}` env-expansion (never literal tokens).
+- [x] HTML injection: public site renders only via safe DOM (`el()`), zero `innerHTML`/`eval`/`document.write` in `public/js`; admin fixed so every `data-id`/`?id=` attribute interpolation and `<option value>` is `A.esc`-wrapped (ids are additionally constrained by `ID_RE ^[a-z0-9]+(-[a-z0-9]+)*$`); `build_site.py` escapes all interpolations.
+- [x] No client-side admin credentials; `serve.py` binds `127.0.0.1`; `admin/` is outside `public/` and never deployed (deploy artifact = `public/`).
+- [x] Safe external links: all `target="_blank"` carry `rel="noopener"`; no plain-`http://` external URLs.
+- [x] Workflow permissions minimal: validate = `contents: read`; deploy = read + `pages: write` + OIDC `id-token`.
+- [x] Dependencies: pure Python stdlib + vanilla JS — no pip/npm/third-party scripts anywhere.
+- [x] `SECURITY.md` updated (federated header secrets, deployment boundary, automated audit); `tools/security_audit.py` + `tests/test_security.py` run in CI.
+
 ---
 
 # 25. Stage 21 — Documentation
 
 README covers purpose, architecture, local development, data format, deployment, admin workflow, Google Sheets adapter, contributing, licensing. Document `DATA_SCHEMA.md`, `ADMIN_GUIDE.md`, `DEPLOYMENT.md` where useful.
+
+### Acceptance
+- [x] README: purpose ("why"), architecture link, local development, deployment (GitHub Pages / `deploy.yml`), admin workflow, sheet adapter, contributing, licensing — all present.
+- [x] README documentation list updated: `ARCHITECTURE.md`, `TODO_AGENT.md`, `DATA_SCHEMA.md`, `ADMIN_GUIDE.md`, `DEPLOYMENT.md`, `SHEET_IMPORT.md`, `FEDERATION.md`, `CONTRIBUTING.md`, `SECURITY.md`.
+- [x] `DATA_SCHEMA.md` — canonical format (already present, linked).
+- [x] `ADMIN_GUIDE.md` (new): starting the panel, editor workflow, event statuses, recurring events + exceptions, Semak data / Terbitkan, imports, schema pointer.
+- [x] `DEPLOYMENT.md` (new): GitHub Actions deploy pipeline, first-time Pages setup, custom domain, local preview, verification, troubleshooting, going live.
+- [x] `CONTRIBUTING.md` — running all CI checks locally (validate, Python + JS suites, perf gate, security audit).
+- [x] All internal doc links verified to exist; no test/no docs command changed.
 
 ---
 
@@ -1242,3 +1286,282 @@ Next stage: Stage 17 — Federation / Multiple Data Sources (aggregate JSON URL 
   Git-repo/Google-Sheets/REST feeds; all sources normalize to the canonical
   schema).
 ```
+
+---
+
+# Session Report — 2026-08-10 (19) — Stage 17
+
+```text
+Current stage: Stage 17 (Federation / Multiple Data Sources) — complete.
+Completed:
+  - tools/federate.py (new): aggregates multiple independent feeds into the
+    canonical data set in one run, config-driven:
+      * feed types: local-json (Git-repo workspace clones, exports, offline),
+        json-url / rest (HTTP(S) JSON; header values expand ${NAME} from the
+        environment so tokens never live in a config file), google-sheet
+        (reuses tools/import_google_sheet.py in-process, offline CSV files
+        supported).
+      * JSON payloads may be per-collection objects or a single-collection
+        array; optional "fields" rename map; records use canonical fields.
+      * reference cells (masjid/speaker/category) resolve by id OR display
+        name against everything already merged, so a masjid from feed A can
+        be referenced by an event in feed B (cross-feed aggregation).
+      * merge semantics identical to the sheet importer: add/update by id
+        only, never prune; duplicate explicit ids rejected (first wins);
+        generated ids (masjid/speaker/category from name, evt-{date}-{NNN}
+        for events) never collide across feeds.
+      * invalid rows and unresolvable references are skipped and reported
+        (feed / collection / row / reason).
+      * the FULL merged set is validated against a throwaway copy BEFORE
+        writing; failure aborts with exit 2 and data/ is byte-identical.
+        --dry-run validates only; --strict aborts on any skipped row.
+      * settings/districts/editors pass through untouched.
+  - tools/feeds.example.json (new) documenting all four feed types.
+  - FEDERATION.md (new): feed types, config reference, payload shapes,
+    reference resolution, merge guarantees, header secrets, usage/exit codes.
+  - validate.yml: test_federate.py added to the Python suites step.
+  - README.md (importing-data section + docs list), ARCHITECTURE.md (data
+    flow diagram now multi-source; "ADD FEDERATION" roadmap marker marked
+    done and followed by accessibility/performance/security/docs).
+Tests:
+  - tests/test_federate.py (new) -> 7/7: aggregate + cross-feed update with
+    district derivation and id uniqueness; invalid date + unknown reference
+    rows skipped and reported; merged-data validation failure aborts without
+    writing; --dry-run writes nothing; non-strict vs --strict behavior; a
+    live local HTTP endpoint exercises the json-url loader; a google-sheet
+    feed (offline CSV) plus a json feed referencing the sheet-created masjid
+    by name exercises cross-feed resolution.
+  - Existing suites unchanged and green: validate 8/8, build_site 14/14,
+    admin 7/7, import_sheet 4/4, events 37/37, masjids 12/12, share 12/12,
+    ics 21/21, maps 9/9.
+  - tools/validate_data.py -> OK on data/; node --check clean;
+    mirror-in-sync check passes.
+Files changed:
+  - tools/federate.py (new), tools/feeds.example.json (new)
+  - FEDERATION.md (new)
+  - tests/test_federate.py (new)
+  - .github/workflows/validate.yml, README.md, ARCHITECTURE.md, TODO_AGENT.md
+Known issues:
+  - None blocking. Google Sheets remains optional; Git repos are ingested as
+    local JSON clones (no credentials needed). Authenticated REST feeds use
+    env-expanded headers (${NAME}); literal secrets must not be committed.
+Next stage: Stage 18 — Accessibility audit (keyboard, headings/labels, focus
+  states, contrast, screen-reader labels, no color-only information).
+
+---
+
+# Session Report — 2026-08-10 (20) — Stage 18
+
+```text
+Current stage: Stage 18 (Accessibility) — complete.
+Completed:
+  Public site:
+    - Skip link on every page now targets <main id="main" tabindex="-1">
+      (was #app on a div). main:focus outline suppressed (programmatic only).
+    - results.js: events page and masjid-directory page now include a
+      visually-hidden live region (role="status") announcing the filtered
+      result count, so screen readers hear filter/tab/search outcomes.
+    - ts.ics.js ui.js: new pure helper ui.resultCountMessage(n).
+    - Share/copy buttons announce successes/failures into a role="status"
+      region (copy link, copy text, native share).
+    - All target="_blank" links (WhatsApp/Telegram/maps/website) gained an
+      accessible, visually-hidden "(buka dalam tab baharu)" note via .vh.
+    - CSS: .vh utility, card focus-visible border treatment (keyboard
+      equivalent of hover), main:focus outline suppression.
+  Admin:
+    - Skip links + <main id="main" tabindex="-1"> on all 8 pages.
+    - Live role="status" result-count region on the events filter toolbar.
+    - admin.css .vh + .skip-link styles; focus-visible already present.
+  Static generator (tools/build_site.py):
+    - Generated event/masjid pages: <main tabindex="-1">, "buka dalam tab
+      baharu" hints on static share/website/map links.
+  Contrast (all >= 4.5:1, AA normal text): muted #5b6b7a 5.4:1 on surface,
+    4.6:1 on page bg; accent #0f6b3a 6.6:1 vs white; accent-dark #0a4d29
+    9.9:1 vs white; warning/error inks >= 6:1 on their bgs; status labels
+    always pair colour with text (no colour-only information).
+Tests:
+  - tests/test_a11y.py (new) -> 3/3: static HTML audit of committed public
+    pages, committed admin pages, and server-rendered generated pages —
+    html lang, single h1, skip link -> focusable main, labelled controls,
+    rel="noopener" on _blank links, no duplicate ids, <title>.
+  - tests/test_a11y.js (new) -> 4/4: ui.resultCountMessage edge cases.
+  - All existing suites unchanged and green: validate 8/8, build_site 14/14,
+    admin 7/7, import_sheet 4/4, federate 7/7, events 37/37, masjids 12/12,
+    share 12/12, ics 21/21, maps 9/9. node --check clean; build output
+    manually inspected (vh hints + tabindex present).
+Files changed:
+  - public/index.html events.html event.html masjid.html masjids.html
+  - public/js/app.js public/js/ui.js public/css/style.css
+  - admin/*.html (8 pages), admin/admin.css
+  - tools/build_site.py
+  - tests/test_a11y.py (new), tests/test_a11y.js (new)
+  - .github/workflows/validate.yml, TODO_AGENT.md
+Known issues:
+  - None blocking. Real-world audits (axe-core, VoiceOver/NVDA, tab-order
+    walk-through on phone/desktop widths) still recommended in production
+    readiness (Stage 22); this stage establishes the statically provable
+    baseline in CI.
+Next stage: Stage 19 — Performance (small initial download, minimal JS, no
+  unnecessary deps, compressed assets, lazy loading, measure sizes and
+  request counts).
+
+---
+
+# Session Report — 2026-08-10 (21) — Stage 19
+
+```text
+Current stage: Stage 19 (Performance) — complete.
+Completed:
+  - tools/perf_report.py (new): per-page initial-payload report (HTML, that
+    page's JS modules, the 5 shared data JSON files, CSS, manifest), raw and
+    approx-gzip sizes, request counts, PWA icons excluded from the initial
+    load; enforces budgets and exits 1 on violation.
+  - tools/minify_assets.py (new): conservative JS/CSS minifier used only on
+    the deploy artifact — removes comments (string/template/regex aware) and
+    blank-line/indent whitespace, never renames tokens. Committed sources
+    stay readable. Savings on current files: ~20-40% JS, ~18% CSS.
+  - Workflows: deploy.yml now runs minify + perf gate on the built artifact
+    before upload; validate.yml runs tests/test_perf.py + the budget gate.
+  - Cleanups from measurement: request budget set at 15 by design — data
+    arrives as several tiny, highly cacheable JSON files (per-collection
+    caching; stable files are never re-fetched; HTTP/2 serves in parallel);
+    per-page JS split already minimal (event page = +share+ics, masjid page
+    = +maps).
+  - README: Performance + "Trying it yourself" sections (serve, admin,
+    measure, budgets).
+Measured (committed public/):
+  - heaviest page (event.html): 46.7 kB raw / 15.2 kB approx gzip, 15 reqs
+  - typical page (events/index/masjids): ~40.8 kB raw / ~12.9 kB gzip, 13 reqs
+  - PWA icons 5.1 kB total (not part of initial load)
+Tests:
+  - tests/test_perf.py (new) -> 6/6: comment removal with string/template/
+    regex preservation, node --check passes on every minified public module,
+    CSS string/url/media-query preservation, idempotency, budget gate passes,
+    report lists all pages + icons.
+  - All existing suites unchanged and green; full CI suite re-run ok.
+Files changed:
+  - tools/perf_report.py (new), tools/minify_assets.py (new)
+  - tests/test_perf.py (new)
+  - .github/workflows/deploy.yml, .github/workflows/validate.yml
+  - README.md, TODO_AGENT.md
+Known issues:
+  - None blocking. perf_report approximates gzip with gzip.compress; real
+    brotli (if GitHub chooses it) reports even lower on Windows-free CI.
+  - No lazy-loading work needed: pages have no images and data is loaded once
+    at the top of the app shell; deferring further would delay first render
+    without saving bytes.
+Next stage: Stage 20 — Security Review (no secrets in repo/frontend, no
+  unsafe HTML injection, escape user text, safe external links, no
+  client-side admin credentials, minimized workflow permissions, review
+  dependencies, no unnecessary third-party scripts; update SECURITY.md).
+
+---
+
+# Session Report — 2026-08-10 (22) — Stage 20
+
+```text
+Current stage: Stage 20 (Security Review) — complete.
+Completed:
+  Secrets:
+    - Scanned all tracked files for credential-valued patterns: none found.
+      .gitignore already blocks *.pem/*.key/*.env/credentials*.json etc.
+      feeds.example.json / sheets_import.example.json carry no literal secrets
+      (federate headers are ${NAME} env-expanded; verified in-code).
+  Injection:
+    - Public/js is safe-DOM only: zero innerHTML/eval/document.write (audit
+      asserts this; breaks are impossible without a sink).
+    - Admin used innerHTML for tables/forms; many attribute interpolations
+      (data-id="', ?id=, <option value>) were NOT escaped. Fixed every one:
+      admin/{events,masjids,speakers,categories,districts,editors,
+      event-editor}.html now wrap ids in A.esc(...). Defense in depth is
+      doubled because validate_data.ID_RE restricts ids to
+      ^[a-z0-9]+(-[a-z0-9]+)*$ (hostile ids are rejected at validation).
+      Verified remaining innerHTML uses only escaped value/name text.
+    - build_site.py escapes every interpolated value incl. attribute values.
+  Boundary/creds:
+    - serve.py binds 127.0.0.1 only; admin has no credentials/secrets;
+      admin/ is outside public/ and the deploy artifact is exactly public/
+      (no backend, no admin pages, no PWA refs in admin).
+  Links/scripts/deps:
+    - All target=_blank have rel=noopener (a11y test enforces); no plain http
+      external URLs; no remote <script>; public JS fetches only local data.
+    - Workflows: validate = contents:read; deploy = read + pages:write + OIDC.
+    - Zero third-party deps: tools/tests import Python stdlib only (verified
+      by import sweep).
+  SECURITY.md updated: federated-header secrets, deployment boundary,
+    automated audit.
+Tests:
+  - tools/security_audit.py (new): secrets, https-only, no remote scripts,
+    public safe sinks, admin id attrs escaped, deploy boundary. CLEAN.
+  - tests/test_security.py (new) -> 7/7: audit clean on repo; credential
+    patterns catch ghp_/api-key/RSA/sk_/client_secret; placeholders/docs not
+    flagged; public has no innerHTML; admin id attrs escaped; boundary holds;
+    no secrets in public/admin.
+  - All existing suites re-run green (validate/build/admin/import/federate/
+    a11y/perf + node modules + security audit).
+Files changed:
+  - admin/{events,masjids,speakers,categories,districts,editors,
+    event-editor}.html (A.esc on id attribute sinks)
+  - tools/security_audit.py (new), tests/test_security.py (new)
+  - SECURITY.md, .github/workflows/validate.yml, TODO_AGENT.md
+Known issues:
+  - None blocking. Admin remains a local tool by design (no remote RBAC);
+    validating this again is covered by the deploy boundary test if the
+    layout ever changes. A real secret scanner (gitleaks/trivy) on a hosted
+    repo would add history scanning alongside this committed-file audit.
+Next stage: Stage 21 — Documentation (README purpose/architecture/dev/data
+  format/deployment/admin workflow/sheet adapter/contributing; write
+  DATA_SCHEMA.md, ADMIN_GUIDE.md, DEPLOYMENT.md where useful).
+
+---
+
+# Session Report — 2026-08-10 (23) — Stage 21
+
+```text
+Current stage: Stage 21 (Documentation) — complete.
+Completed:
+  README.md:
+    - Already covered purpose, layout (arch/data/public/admin/tools), local
+      dev, importing (sheet + federate), performance, trying-it-yourself.
+    - Documentation list updated to link ADMIN_GUIDE.md and DEPLOYMENT.md and
+      summarise what each doc covers; roadmap pointer retained.
+  ADMIN_GUIDE.md (new):
+    - Panel as a local-only tool (never deployed); starting serve.py; the
+      per-page model (Ringkasan/Acara/Masjid/Penceramah/Kategori/Daerah/Editor
+      + legacy add-masjid.html).
+    - Events: fields, validations, and the five statuses
+      (draft/published/cancelled/postponed/completed) with their public
+      meaning; recurring weekly events + exceptions (recurrence.exceptions);
+      delete blocked while referenced.
+    - Semak data (validate) / Terbitkan (sync public/data mirror), then the
+      local preview flow; imports (SHEET_IMPORT.md, FEDERATION.md); data
+      format pointer (DATA_SCHEMA.md, ID rules).
+  DEPLOYMENT.md (new):
+    - GitHub Actions pipeline: validate -> sync data -> configure Pages ->
+      gen icons -> build_site -> minify -> perf gate -> upload + deploy;
+      artifact = public/ only (admin/tools/data never deployed).
+    - First-time setup (Settings -> Pages -> Source: GitHub Actions),
+      project vs user/org site URLs, custom domain/DNS + HTTPS.
+    - Local preview with build_site.py + http.server; verification checklist
+      (sitemap, no-JS pages, ics, canonical/OG/JSON-LD, SW stamp, perf_report);
+      CI (validate.yml) summary; troubleshooting table; going-live with real
+      content (replace sample data, set settings.site_url).
+  CONTRIBUTING.md: replaced the two-line "Getting started" with "Running the
+    checks" listing validate + all Python suites + `node tests/test_*.js` +
+    perf gate + security audit, matching CI.
+  Todoagent.md is a distinct, tracked early-planning artifact (contains the
+    original project brief); left untouched — not a duplicate of TODO_AGENT.md.
+Tests:
+  - No code changed this stage; docs only. Validation of every referenced file
+    and command was done by reading the actual tool/test files.
+Files changed:
+  - ADMIN_GUIDE.md (new), DEPLOYMENT.md (new)
+  - README.md (docs list), CONTRIBUTING.md (CI check commands),
+    TODO_AGENT.md (checklist + session report)
+Known issues:
+  - None. Follow-ups for Stage 22 (Production Readiness): replace demo data
+    with real masjids, set settings.site_url, verify on GitHub Pages.
+Next stage: Stage 22 — Production Readiness (remove demo data, add real
+  masjids, verify locations/times/timezone, cancelled/recurring events,
+  mobile/slow/no-JS, GitHub Pages, sharing links, sitemap, no credentials
+  exposed).
