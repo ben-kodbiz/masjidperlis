@@ -480,6 +480,12 @@ The public interface must be usable on phones and tablets (mobile-first). Minimu
 
 Android/iOS apps, Telegram bot, WhatsApp integration, email/browser notifications, RSS feeds, public API, statewide federation, event subscriptions, masjid dashboards, analytics, multilingual/Jawi support, offline-first enhancements, **QR codes for masjid/event URLs** (deferred; re-introduce only when explicitly requested — point at stable URLs, never encode event details directly). Do not implement unless explicitly requested.
 
+**Post-MVP security hardening (maintainer decision — do not implement until requested):**
+- **Branch protection on `master`** (Settings → Branches): require a pull request + review for all pushes. Cloning alone can never write, but a direct push from a compromised collaborator/token bypasses review; PR+review closes that gap. This is the single biggest protection for the live site.
+- **Required reviewers on the `github-pages` environment**: add `environment: github-pages` a required-reviewer so every deploy waits for manual approval (second human gate on top of branch protection).
+- **PAT hygiene**: the personal access token (with `workflow` scope) is currently the master key for the live site. Keep it only in a password manager, never commit it, scope it minimally, rotate periodically, and enable 2FA on the account.
+- Note: the CI `validate_data.py` gate (deploy.yml) already rejects malformed/broken data before deploy; it cannot detect *valid-but-fake* data — trust of data content is governed by who may push (the items above).
+
 ---
 
 # 29. Agent Operating Rule
@@ -1671,3 +1677,42 @@ Remaining (maintainer, optional): replace demo data with real masjids/events
   when ready to go public (the site is fully functional with the demo set).
 Next stage: none required for MVP. Future ideas are intentionally deferred
   (TODO_AGENT "Future Ideas — DO NOT IMPLEMENT YET").
+
+---
+
+# Session Report — 2026-08-11 (26) — Native .xlsx reading + roadmap security notes
+
+```text
+Current stage: MVP complete; post-MVP feature — native .xlsx data import.
+Completed:
+  - tools/import_google_sheet.py now reads .xlsx workbooks natively using only
+    the Python standard library (zipfile + xml.etree.ElementTree): Excel
+    date/time serials are converted to YYYY-MM-DD / HH:MM using the workbook's
+    number formats; shared strings and inline strings are handled; a per-source
+    "sheet" key selects a named worksheet (default: first visible tab).
+  - load_rows dispatches on the .xlsx extension, so a daily driver can save
+    straight from Excel — no CSV export, no comma-quoting rules.
+  - tools/security_audit.py exempts OOXML namespace URIs
+    (schemas.openxmlformats.org) from the http-only URL scan — they are
+    identifiers, not endpoints.
+  - Docs updated: DATA_ENTRY_GUIDE.md (sections 1, 3, 4, 5, 8) and
+    data-entry/README.md; troubleshooting row for a wrong "sheet" name.
+  - Roadmap: post-MVP security-hardening notes (branch protection, github-pages
+    environment required reviewers, PAT hygiene) added under Future Ideas —
+    to be implemented only when the maintainer requests them.
+Tests:
+  - tests/test_import_sheet.py 9/9 (new: .xlsx end-to-end with date/time serials,
+    comma-containing strings and recurrence; wrong-sheet-name clear error).
+  - Full Python suite green except the pre-existing
+    test_no_site_url_falls_back_to_root_relative failure (fails on clean master
+    too — unrelated to this change).
+  - Security audit CLEAN; real data-entry config dry-run OK.
+Files changed:
+  - tools/import_google_sheet.py, tools/security_audit.py,
+    tests/test_import_sheet.py, DATA_ENTRY_GUIDE.md, data-entry/README.md,
+    TODO_AGENT.md (Future Ideas security notes + this report)
+Known issues:
+  - Only the first worksheet of an .xlsx is read unless "sheet" is set. The old
+    binary .xls format is NOT supported (use .xlsx).
+Next stage: none required. Future ideas are intentionally deferred.
+```

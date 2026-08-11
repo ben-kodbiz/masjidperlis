@@ -113,7 +113,9 @@ def scan_https():
                 u = m.group(0).rstrip(".,);]}")
                 if u.startswith("http://"):
                     # sitemap namespace and shell docstring examples are fine
-                    if "sitemaps.org" in u or "localhost" in u or "127.0.0.1" in u:
+                    if ("sitemaps.org" in u or "localhost" in u or "127.0.0.1" in u
+                            # OOXML namespace URIs are identifiers, not endpoints
+                            or "schemas.openxmlformats.org" in u):
                         continue
                     findings.append("{}: {} (not https)".format(path.relative_to(ROOT), u))
     return findings

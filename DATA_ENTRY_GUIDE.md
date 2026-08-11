@@ -9,8 +9,8 @@ files that the live site is built from):
 
 ```text
 +-----------------------------+      +---------------------------------+
-| Google Sheet(s) published    |      | Local CSV / Excel file(s)       |
-| to the web (CSV)             |      | (save .xlsx as .csv)            |
+| Google Sheet(s) published    |      | Local CSV / Excel (.xlsx) file(s)|
+| to the web (CSV)             |      | (no export step needed)         |
 +--------------+--------------+      +---------------+-----------------+
                v                                    v
      tools/import_google_sheet.py  (same tool for both!)
@@ -25,9 +25,10 @@ files that the live site is built from):
    git add + git commit + git push  ->  GitHub Actions rebuilds + deploys
 ```
 
-**Important:** the importer reads **CSV** only. If you use Excel, export each
-sheet as `.csv` (UTF-8) first — see section 4. No Google API key or OAuth is
-needed for the Google Sheets route either.
+**Important:** the importer reads **CSV and native `.xlsx` workbooks** (Excel
+dates/times are understood — no CSV export needed if you keep your files as
+`.xlsx`). No Google API key or OAuth is needed for the Google Sheets route
+either.
 
 ---
 
@@ -108,8 +109,9 @@ python3 tools/import_google_sheet.py --strict
 
 ## 3. Option B — Local CSV / Excel files (offline, no Google needed)
 
-You can point each source at a local CSV instead of a Google tab. This is the
-same tool, just configured with `"file"` instead of `"gid"`.
+You can point each source at a local CSV **or `.xlsx`** file instead of a
+Google tab. This is the same tool, just configured with `"file"` instead of
+`"gid"`.
 
 > **Simplest path (recommended):** the repo ships a ready-made
 > **`data-entry/`** folder exactly for this. Open the four CSVs in Excel, add
@@ -118,19 +120,26 @@ same tool, just configured with `"file"` instead of `"gid"`.
 
 ### 3.1 Prepare the files
 
-Create four CSV files — one per data file — in a folder, e.g. `my-data/`:
+Create four files — one per data file — in a folder, e.g. `my-data/`:
 
 ```
 my-data/
-  kategori.csv
-  penceramah.csv
-  masjids.csv
-  acara.csv
+  kategori.csv   (or .xlsx)
+  penceramah.csv (or .xlsx)
+  masjids.csv    (or .xlsx)
+  acara.csv      (or .xlsx)
 ```
 
-Each file has the headers from **section 5** in row 1. Use **UTF-8** encoding
-(Excel: **Save As → CSV UTF-8 (Comma delimited)**). A UTF-8 BOM is fine — the
-importer strips it.
+Each file has the headers from **section 5** in row 1. You can mix: one source
+may be a CSV and another an `.xlsx`.
+
+- **`.csv`**: use **UTF-8** encoding (Excel: **Save As → CSV UTF-8 (Comma
+  delimited)**). A UTF-8 BOM is fine — the importer strips it.
+- **`.xlsx`**: just save the workbook normally (**File → Save As → Excel
+  Workbook**). Dates and times you type in Excel (`2026-08-20`, `20:00`) are
+  converted automatically, and comma-containing values such as
+  `monday,friday` need **no quoting**. A `.xlsx` with several tabs uses the
+  first one, or set `"sheet": "TabName"` on that source to pick a specific tab.
 
 ### 3.2 Configure
 
@@ -149,9 +158,11 @@ Make a config like this (or any name; pass it with `--config`):
 ```
 
 The keys **must** be named `categories`, `speakers`, `masjids`, `events`. The
-file *names* are up to you, and `file` paths are resolved **relative to the
-config file's folder**, so you can keep the folder anywhere and run from any
-directory. Use the same `columns` maps as in `tools/sheets_import.example.json`.
+file *names* are up to you, `file` may end in `.csv` or `.xlsx`, and paths are
+resolved **relative to the config file's folder**, so you can keep the folder
+anywhere and run from any directory. Optional per-source `"sheet"` picks a
+worksheet inside an `.xlsx` workbook. Use the same `columns` maps as in
+`tools/sheets_import.example.json`.
 
 Only configure the sources you actually maintain — a missing source is left
 untouched (so you can, for example, import just `events` every week without
@@ -175,15 +186,21 @@ python3 tools/import_google_sheet.py --config my-config.json
 
 ---
 
-## 4. Excel → CSV quick reference
+## 4. File formats — CSV vs Excel (.xlsx)
 
-| App | How to export |
-| --- | ------------- |
-| Microsoft Excel | File → Save As → type **CSV UTF-8 (Comma delimited) (\*.csv)**. Export one tab at a time. |
-| LibreOffice Calc | File → Save As → format **Text CSV (.csv)** → Encoding **UTF-8**. |
+The importer reads **both**; pick whichever you find easier.
+
+| If you use… | What to do |
+| ----------- | ---------- |
+| **Microsoft Excel** | Save the file as **Excel Workbook (\*.xlsx)** and point the config's `"file"` at it. Dates/times and commas just work — **no CSV export**. |
+| Microsoft Excel (CSV) | File → Save As → **CSV UTF-8 (Comma delimited) (\*.csv)**. One tab at a time. |
+| LibreOffice Calc | File → Save As → **Excel 2007–365 (\*.xlsx)** or **Text CSV (.csv)** → Encoding **UTF-8**. |
 | Google Sheets | File → Download → **Comma-separated values (.csv, current sheet)**. |
 
-Never paste Excel files directly — the importer cannot read `.xlsx`.
+Excel `.xlsx` reading is built into the tool (Python standard library only, no
+extra installs): cells you type a date or time into are converted from Excel's
+internal numbers to the `YYYY-MM-DD` / `HH:MM` the site expects. If a workbook
+has several tabs, the first is read unless a `"sheet"` name is configured.
 
 ---
 
@@ -242,7 +259,8 @@ Rules:
 > wrapped in double quotes in the CSV: `"monday,friday"`. Google Sheets does
 > this automatically on export, but if you hand-write or post-edit a CSV,
 > unquoted commas produce extra columns and the import stops with a clear
-> message telling you to quote the value.
+> message telling you to quote the value. **This rule only applies to `.csv`
+> files — `.xlsx` cells never need quoting.**
 
 ---
 
@@ -298,5 +316,6 @@ performance budgets, and publishes. Within a minute or two your live site at
 | `ABORTED — merged data is invalid` | Read the listed problems (bad date, missing masjid, unknown district…), fix the rows, re-run. |
 | Row skipped: `unknown masjid` | The masjid name/id isn't in the Masjids tab (or is misspelled). |
 | `Invalid UTF-8` / mojibake in names | Re-save the CSV as **UTF-8** (see section 4). |
+| `.xlsx` reads the wrong tab | Set `"sheet": "TabName"` on that source to pick a worksheet (default: first tab). |
 | Site not updating after push | Check the Actions tab — the deploy workflow (not just validate) must finish green. |
 | Wrong district link | `Daerah` must be one of the 15 official Perlis names; use the Malay name exactly. |

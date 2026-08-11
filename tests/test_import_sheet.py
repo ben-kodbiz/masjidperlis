@@ -8,11 +8,13 @@ Usage:
     python3 tests/test_import_sheet.py
 """
 
+import datetime
 import json
 import shutil
 import subprocess
 import sys
 import tempfile
+import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -96,6 +98,116 @@ def run(tmp, data_dir, *extra):
 
 def read_json(data_dir, name):
     return json.loads((data_dir / name).read_text(encoding="utf-8"))
+
+
+_XLSX_NS_URL = "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+
+
+def build_xlsx(path, headers, rows, fmt_cols=None, sheet_name="Acara"):
+    """Write a minimal .xlsx workbook (stdlib only) for importer tests.
+
+    fmt_cols maps column letter -> (numfmt_id, format_code); data cells in
+    those columns carry that style and are emitted as numbers (Excel serials)
+    so the reader converts them with the workbook's number formats. Header
+    cells and all other string cells use the shared-string table.
+    """
+    fmt_cols = fmt_cols or {}
+    shared = []
+    shared_idx = {}
+    letters = [chr(ord("A") + i) for i in range(len(headers))]
+
+    # xf index 0 = plain cells; each formatted column points at the xf entry
+    # built from its numFmtId (in sorted order).
+    xf_index = {fid: i + 1 for i, fid in enumerate(sorted({fid for fid, _ in fmt_cols.values()}))}
+    style_for_col = {col: xf_index[fid] for col, (fid, _) in fmt_cols.items()}
+
+    def _cell(ref, value, styled=False):
+        if value is None:
+            return f'<c r="{ref}"/>'
+        if styled:
+            return f'<c r="{ref}" s="{style_for_col[ref.rstrip("0123456789")]}"><v>{value}</v></c>'
+        if value in shared_idx:
+            return f'<c r="{ref}" t="s"><v>{shared_idx[value]}</v></c>'
+        shared_idx[value] = len(shared)
+        shared.append(value)
+        return f'<c r="{ref}" t="s"><v>{shared_idx[value]}</v></c>'
+
+    def _row(r, values):
+        cells = []
+        for letter, value in zip(letters, values):
+            styled = r > 1 and letter in style_for_col
+            cells.append(_cell(letter + str(r), value, styled=styled))
+        return f'<row r="{r}">{"".join(cells)}</row>'
+
+    sheet_data = _row(1, headers)
+    for r, values in enumerate(rows, start=2):
+        sheet_data += _row(r, values)
+
+    numfmts = "".join(
+        f'<numFmt numFmtId="{fid}" formatCode="{code}"/>' for fid, code in fmt_cols.values())
+    xfs = '<xf numFmtId="0" applyNumberFormat="0"/>' + "".join(
+        f'<xf numFmtId="{fid}" applyNumberFormat="1"/>' for fid in sorted(xf_index))
+    sst = "".join(f"<si><t>{v}</t></si>" for v in shared)
+
+    content_types = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
+        '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+        '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+        '<Default Extension="xml" ContentType="application/xml"/>'
+        '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'
+        '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
+        '<Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/>'
+        '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'
+        '</Types>'
+    )
+    root_rels = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
+        '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+        '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>'
+        '</Relationships>'
+    )
+    workbook = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
+        f'<workbook xmlns="{_XLSX_NS_URL}" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+        f'<sheets><sheet name="{sheet_name}" sheetId="1" r:id="rId1"/></sheets>'
+        '</workbook>'
+    )
+    workbook_rels = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
+        '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+        '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>'
+        '</Relationships>'
+    )
+    worksheet = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
+        f'<worksheet xmlns="{_XLSX_NS_URL}"><sheetData>{sheet_data}</sheetData></worksheet>'
+    )
+    shared_strings = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
+        f'<sst xmlns="{_XLSX_NS_URL}" count="{len(shared)}" uniqueCount="{len(shared)}">{sst}</sst>'
+    )
+    styles = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
+        f'<styleSheet xmlns="{_XLSX_NS_URL}">'
+        f'<numFmts count="{len(fmt_cols)}">{numfmts}</numFmts>'
+        f'<cellXfs count="{len(xf_index) + 1}">{xfs}</cellXfs>'
+        '</styleSheet>'
+    )
+    with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr("[Content_Types].xml", content_types)
+        zf.writestr("_rels/.rels", root_rels)
+        zf.writestr("xl/workbook.xml", workbook)
+        zf.writestr("xl/_rels/workbook.xml.rels", workbook_rels)
+        zf.writestr("xl/worksheets/sheet1.xml", worksheet)
+        zf.writestr("xl/sharedStrings.xml", shared_strings)
+        zf.writestr("xl/styles.xml", styles)
+
+
+def excel_serial(date_or_time):
+    """Convert a date or (hours, minutes) into an Excel serial number."""
+    if isinstance(date_or_time, tuple):  # (h, m) -> fraction of a day
+        return round(date_or_time[0] / 24 + date_or_time[1] / 1440, 12)
+    return (date_or_time - datetime.date(1899, 12, 30)).days
 
 
 def test_happy_merge_add_update_skip():
@@ -334,6 +446,69 @@ def test_relative_file_paths_resolve_against_config_dir():
     try:
         assert result.returncode == 0, result.stdout + result.stderr
         assert any(e["title"] == "Acara Relatif" for e in read_json(data_dir, "events.json"))
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def test_xlsx_import_dates_times_and_comma_strings():
+    # A native .xlsx workbook (as a non-technical user would save straight
+    # from Excel) must import end to end: Excel date/time serials become
+    # YYYY-MM-DD / HH:MM, and comma-containing strings such as "monday,friday"
+    # are single cells — no CSV quoting foot-gun.
+    tmp, data_dir = make_env()
+    fmt = {"D": (164, "yyyy-mm-dd"), "E": (165, "hh:mm"),
+           "F": (165, "hh:mm"), "N": (164, "yyyy-mm-dd")}
+    build_xlsx(tmp / "acara.xlsx", COLS["events"], [[
+        None, "Ceramah Excel", "masjid-alwi",
+        excel_serial(datetime.date(2026, 8, 20)),  # Tarikh as a date serial
+        excel_serial((20, 0)),                     # Mula as a time serial
+        excel_serial((21, 0)),                     # Tamat as a time serial
+        None, None, None, None, "published", "weekly",
+        "monday,friday",                           # comma value = one cell
+        excel_serial(datetime.date(2026, 8, 20)),  # Mula ulangan as date serial
+        "2026-12-31", "2026-08-28,2026-09-04",
+    ]], fmt_cols=fmt)
+    (tmp / "config.json").write_text(json.dumps({
+        "spreadsheet_id": "",
+        "sources": {
+            "events": {"file": "acara.xlsx", "id_column": "id",
+                       "columns": MAP["events"]},
+        },
+    }, ensure_ascii=False), encoding="utf-8")
+    result = run(tmp, data_dir)
+    try:
+        assert result.returncode == 0, result.stdout + result.stderr
+        events = read_json(data_dir, "events.json")
+        ev = next(e for e in events if e["title"] == "Ceramah Excel")
+        assert ev["date"] == "2026-08-20", ev
+        assert ev["start_time"] == "20:00", ev
+        assert ev["end_time"] == "21:00", ev
+        assert ev["masjid_id"] == "masjid-alwi", ev
+        assert ev["recurrence"]["days"] == ["monday", "friday"], ev
+        assert ev["recurrence"]["start_date"] == "2026-08-20", ev
+        assert ev["recurrence"]["exceptions"] == ["2026-08-28", "2026-09-04"], ev
+        assert "extra column" not in result.stderr, result.stderr
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def test_xlsx_wrong_sheet_name_reports_clear_error():
+    # A "sheet" entry that doesn't exist in the workbook must fail with a
+    # clear message, never a traceback.
+    tmp, data_dir = make_env()
+    build_xlsx(tmp / "acara.xlsx", COLS["events"], [])
+    (tmp / "config.json").write_text(json.dumps({
+        "spreadsheet_id": "",
+        "sources": {
+            "events": {"file": "acara.xlsx", "sheet": "TidakWujud",
+                       "id_column": "id", "columns": MAP["events"]},
+        },
+    }, ensure_ascii=False), encoding="utf-8")
+    result = run(tmp, data_dir)
+    try:
+        assert result.returncode == 1, result.stdout + result.stderr
+        assert "TidakWujud" in result.stderr, result.stderr
+        assert "Traceback" not in result.stderr, result.stderr
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 

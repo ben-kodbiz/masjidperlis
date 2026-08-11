@@ -4,6 +4,13 @@ This folder is for **non-technical daily use**: edit the CSV files in Excel
 (they open normally, no technical skills needed), then run one command. No
 Google account, no API key, no config editing required.
 
+> **Prefer native Excel?** You can also save your file directly as an Excel
+> workbook (`.xlsx` — **File → Save As → Excel Workbook**). The importer reads
+> it as-is: dates and times you type in Excel (e.g. `2026-08-20`, `20:00`) are
+> understood, and a comma inside a cell is fine (no quoting rules to learn).
+> Just change the `"file"` name in `config.json` to the `.xlsx` file. If you
+> keep using the `.csv` files, nothing changes.
+
 ## The four files
 
 | File | What it holds |
@@ -52,7 +59,9 @@ Notes:
 - `Tarikh` = `YYYY-MM-DD`, `Mula`/`Tamat` = `HH:MM`.
 - `Masjid` / `Penceramah` / `Kategori` accept the name **or** the id.
 - `Status`: `published`, `draft`, `cancelled`, `postponed`, `completed`.
-- A value containing a comma (`Hari ulangan`, `Pengecualian`) must be quoted.
+- A value containing a comma (`Hari ulangan`, `Pengecualian`) must be quoted
+  in the **CSV** files (`"monday,friday"`). If you use `.xlsx` files instead,
+  no quoting is ever needed.
 - Importing is **add + update only** — it never deletes your data.
 - To update an existing row, keep its `id`; a blank `id` adds a new row.
 
@@ -62,7 +71,7 @@ Notes:
 ./data-entry/update.sh
 ```
 
-This imports the CSVs into `data/` (validating first) and prints the two
+This imports the files into `data/` (validating first) and prints the two
 commands that publish the site:
 
 ```bash
