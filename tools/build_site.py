@@ -308,6 +308,42 @@ HEAD_META = """<meta charset="UTF-8">
   <link rel="stylesheet" href="{base}css/style.css">"""
 
 
+THEME_SCRIPT = """
+  <script>
+  /* Theme — light/dark, persisted, falls back to system preference. */
+  (function () {
+    function stored() {
+      try {
+        var t = localStorage.getItem("theme");
+        if (t === "light" || t === "dark") return t;
+      } catch (err) {}
+      return null;
+    }
+    function apply(t) {
+      document.documentElement.setAttribute("data-theme", t);
+    }
+    apply(stored() || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
+    function wire() {
+      var b = document.getElementById("theme-toggle");
+      if (!b) return;
+      b.addEventListener("click", function () {
+        var next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+        apply(next);
+        b.setAttribute("aria-pressed", next === "dark" ? "true" : "false");
+        try {
+          localStorage.setItem("theme", next);
+        } catch (err) {}
+      });
+    }
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", wire);
+    } else {
+      wire();
+    }
+  })();
+  </script>"""
+
+
 def header_nav(active, base=""):
     items = [
         ("index.html", "Utama", "home"),
@@ -326,6 +362,10 @@ def header_nav(active, base=""):
       <nav class="site-nav" aria-label="Navigasi utama">
 {1}
       </nav>
+      <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Tukar tema gelap atau terang">
+        <svg class="icon-moon" aria-hidden="true" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+        <svg class="icon-sun" aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+      </button>
     </div>
   </header>""".format(base, "\n".join(nav))
 
@@ -364,6 +404,8 @@ def wrap_page(page, body_html, scripts, seo_meta, base_prefix="../../"):
         '<html lang="ms">\n'
         "<head>\n"
         + HEAD_META.format(base=base_prefix, **seo_meta)
+        + "\n"
+        + THEME_SCRIPT
         + "\n"
         + jsonld_block(seo_meta.get("jsonld"))
         + "</head>\n"

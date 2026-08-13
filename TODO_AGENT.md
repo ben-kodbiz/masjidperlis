@@ -1829,3 +1829,34 @@ Known issues:
   - Same pre-existing build_site test failure (unrelated to this change).
 Next stage: none required. Future ideas are intentionally deferred.
 ```
+
+---
+
+# Session Report — 2026-08-14 (30) — Dark/light theme toggle
+
+```text
+Current stage: post-MVP.
+Completed:
+  - Dark/light theme toggle on all public pages (index, events, masjids,
+    event.html, masjid.html templates + generated event/masjid detail pages).
+  - CSS: added :root[data-theme="dark"] variable overrides + color-scheme dark;
+    .theme-toggle button with sun/moon SVG icons (dark shows sun, light shows moon).
+  - Theme init + toggle logic is a small inline <head> script (single source in
+    tools/build_site.py THEME_SCRIPT) so there is no theme flash (FOUC) and NO
+    extra network request — the perf gate stays at <=15 requests (event.html is
+    exactly 15, so a separate theme.js file would have busted the budget).
+  - Default = system preference (prefers-color-scheme); choice persisted to
+    localStorage; no-JS readers stay light.
+Tests:
+  - perf Budgets OK (15 requests max); a11y 3/3; admin 7/7; build 13/14 (only the
+    pre-existing unrelated test_no_site_url_falls_back_to_root_relative failure);
+    security audit CLEAN; theme logic verified in a node DOM-stub harness (init,
+    system fallback, stored override, toggle + persistence).
+Files changed:
+  - public/css/style.css, public/{index,events,masjids,event,masjid}.html,
+    tools/build_site.py, TODO_AGENT.md.
+Known issues:
+  - Inline theme script is duplicated in the 5 shell pages + THEME_SCRIPT in
+    build_site.py; update both together if the theme logic changes.
+Next stage: none required. Future ideas are intentionally deferred.
+```
