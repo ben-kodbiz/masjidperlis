@@ -24,7 +24,8 @@ The project is built **stage-by-stage**; see `TODO_AGENT.md` for the roadmap and
 ## Getting started
 
 ```bash
-# serve the public site locally
+# generate masjid/event detail pages, then serve the public site locally
+python3 tools/build_site.py
 python3 -m http.server 8000 --directory public
 
 # validate the data

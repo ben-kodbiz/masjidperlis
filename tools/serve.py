@@ -512,11 +512,21 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _send_html(self, status, body):
+        body = body.encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
     def _send_file(self, rel_path):
         target = (ROOT / rel_path).resolve()
         if not str(target).startswith(str(ROOT)):
             self._send_json(403, {"error": "forbidden"})
             return
+        if target.is_dir():
+            target = target / "index.html"
         if not target.is_file():
             self._send_json(404, {"error": "not found"})
             return
@@ -558,6 +568,12 @@ class Handler(BaseHTTPRequestHandler):
         if parts == ["api", "validate"]:
             errors = store().validate()
             return self._send_json(200, {"ok": not errors, "problems": errors})
+        if len(parts) == 2 and parts[0] in ("masjid", "event"):
+            static = ROOT / parts[0] / parts[1] / "index.html"
+            if not static.is_file():
+                html, _title = self._detail_html(parts[0], parts[1])
+                if html:
+                    return self._send_html(200, html)
         return self._send_file(self.path.lstrip("/"))
 
     def do_POST(self):
@@ -847,6 +863,56 @@ class Handler(BaseHTTPRequestHandler):
         except _NotFound:
             return self._send_json(404, {"error": "record not found"})
 
+    def _detail_html(self, kind, rid):
+        data = store().read_all()
+        masjids = {m.get("id"): m for m in data["masjids.json"]}
+        speakers = {s.get("id"): s for s in data["speakers.json"]}
+        categories = {c.get("id"): c for c in data["categories.json"]}
+        settings = data["settings.json"]
+        site_name = settings.get("site_name") or "Masjid Events Perlis"
+
+        if kind == "event":
+            ev = next((e for e in data["events.json"] if e.get("id") == rid), None)
+            if not ev:
+                return None, None
+            masjid = masjids.get(ev.get("masjid_id"))
+            speaker = speakers.get(ev.get("speaker_id"))
+            category = categories.get(ev.get("category_id"))
+            body = build_site.event_body(ev, masjid, speaker, category, base="../../")
+            summary = build_site.text_summary(ev, masjid, speaker)
+            canonical = build_site.page_url("", f"event/{rid}/")
+            share = (
+                '<div class="share">'
+                '<a class="btn btn-ghost" rel="noopener" target="_blank" href="{}">Kongsi WhatsApp</a>'
+                '<a class="btn btn-ghost" rel="noopener" target="_blank" href="{}">Kongsi Telegram</a>'
+                "</div>"
+            ).format(build_site.whatsapp_url(summary + "\n" + canonical),
+                     build_site.telegram_url(summary, canonical))
+            body = body.replace("  </article>", "  </article>\n" + share)
+            title = f"{ev.get('title') or ''} — {site_name}"
+        elif kind == "masjid":
+            masjid = next((m for m in data["masjids.json"] if m.get("id") == rid), None)
+            if not masjid:
+                return None, None
+            today = date.today().isoformat()
+            body = build_site.masjid_body(masjid, data["events.json"], masjids,
+                                          categories, speakers, today, base="../../")
+            title = f"{masjid.get('name') or ''} — {site_name}"
+        else:
+            return None, None
+        html = (
+            "<!DOCTYPE html><html lang=\"ms\"><head><meta charset=\"UTF-8\">"
+            "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">"
+            + build_site.HEAD_META.format(
+                base="../../", description=(body[:160] or title),
+                canonical=build_site.page_url("", kind + "/" + rid + "/"),
+                og_type="article" if kind == "event" else "website",
+                og_title=title, og_description=(body[:160] or title), og_url="",
+                title=title)
+            + "</head><body>" + body + "</body></html>"
+        )
+        return html, title
+
     def _handle_preview(self, parsed):
         if parsed is None or not isinstance(parsed, dict):
             return self._send_json(400, {"errors": ["preview body must be JSON."]})
@@ -854,54 +920,12 @@ class Handler(BaseHTTPRequestHandler):
         rid = parsed.get("id")
         if not kind or not rid:
             return self._send_json(400, {"errors": ["type and id are required."]})
+        if kind not in ("event", "masjid"):
+            return self._send_json(400, {"errors": ["type must be 'event' or 'masjid'."]})
         try:
-            data = store().read_all()
-            masjids = {m.get("id"): m for m in data["masjids.json"]}
-            speakers = {s.get("id"): s for s in data["speakers.json"]}
-            categories = {c.get("id"): c for c in data["categories.json"]}
-            settings = data["settings.json"]
-            site_name = settings.get("site_name") or "Masjid Events Perlis"
-
-            if kind == "event":
-                ev = next((e for e in data["events.json"] if e.get("id") == rid), None)
-                if not ev:
-                    return self._send_json(404, {"error": "event not found"})
-                masjid = masjids.get(ev.get("masjid_id"))
-                speaker = speakers.get(ev.get("speaker_id"))
-                category = categories.get(ev.get("category_id"))
-                body = build_site.event_body(ev, masjid, speaker, category, base="../../")
-                summary = build_site.text_summary(ev, masjid, speaker)
-                canonical = build_site.page_url("", f"event/{rid}/")
-                share = (
-                    '<div class="share">'
-                    '<a class="btn btn-ghost" rel="noopener" target="_blank" href="{}">Kongsi WhatsApp</a>'
-                    '<a class="btn btn-ghost" rel="noopener" target="_blank" href="{}">Kongsi Telegram</a>'
-                    "</div>"
-                ).format(build_site.whatsapp_url(summary + "\n" + canonical),
-                         build_site.telegram_url(summary, canonical))
-                body = body.replace("  </article>", "  </article>\n" + share)
-                title = f"{ev.get('title') or ''} — {site_name}"
-            elif kind == "masjid":
-                masjid = next((m for m in data["masjids.json"] if m.get("id") == rid), None)
-                if not masjid:
-                    return self._send_json(404, {"error": "masjid not found"})
-                today = date.today().isoformat()
-                body = build_site.masjid_body(masjid, data["events.json"], masjids,
-                                              categories, speakers, today, base="../../")
-                title = f"{masjid.get('name') or ''} — {site_name}"
-            else:
-                return self._send_json(400, {"errors": ["type must be 'event' or 'masjid'."]})
-            html = (
-                "<!DOCTYPE html><html lang=\"ms\"><head><meta charset=\"UTF-8\">"
-                "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">"
-                + build_site.HEAD_META.format(
-                    base="../../", description=(body[:160] or title),
-                    canonical=build_site.page_url("", kind + "/" + rid + "/"),
-                    og_type="article" if kind == "event" else "website",
-                    og_title=title, og_description=(body[:160] or title), og_url="",
-                    title=title)
-                + "</head><body>" + body + "</body></html>"
-            )
+            html, title = self._detail_html(kind, rid)
+            if html is None:
+                return self._send_json(404, {"error": f"{kind} not found"})
             return self._send_json(200, {"ok": True, "title": title, "html": html})
         except Exception as exc:  # preview should never 500 the admin UI
             return self._send_json(500, {"errors": [f"preview failed: {exc}"]})

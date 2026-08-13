@@ -287,6 +287,7 @@ After a successful import:
 python3 tools/validate_data.py
 
 # 2. see it locally (public site)
+python3 tools/build_site.py                       # generate masjid/event detail pages
 python3 -m http.server 8000 --directory public
 
 # 3. commit + push — GitHub Actions rebuilds and deploys automatically

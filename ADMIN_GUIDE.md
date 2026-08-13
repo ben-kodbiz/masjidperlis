@@ -82,6 +82,7 @@ Deployment also refreshes the mirror automatically (GitHub Actions copies
 of the public site:
 
 ```bash
+python3 tools/build_site.py                       # generate masjid/event detail pages
 python3 -m http.server 8000 --directory public   # after Terbitkan
 open http://localhost:8000
 ```
