@@ -60,10 +60,14 @@
     "status": "published",
     "recurrence": {
       "type": "weekly",
-      "days": ["wednesday"],
+      "days": [
+        "wednesday"
+      ],
       "start_date": "2026-08-12",
       "end_date": null,
-      "exceptions": ["2026-08-19"]
+      "exceptions": [
+        "2026-08-19"
+      ]
     }
   },
   {
@@ -101,5 +105,245 @@
     "category_id": "youth",
     "description": "Seminar untuk remaja: identiti dan masa depan.",
     "status": "postponed"
+  },
+  {
+    "id": "evt-20260813-001",
+    "title": "Kuliyyah Isyak: Sirah Nabawiyyah",
+    "masjid_id": "masjid-alwi",
+    "date": "2026-08-13",
+    "start_time": "20:00",
+    "end_time": "21:00",
+    "speaker_id": "speaker-ahmad",
+    "category_id": "kuliyyah",
+    "description": "Kuliyyah harian selepas solat Isyak — siri sirah Nabi.",
+    "status": "published",
+    "recurrence": {
+      "type": "weekly",
+      "days": [
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+        "sunday"
+      ],
+      "start_date": "2026-08-13",
+      "end_date": null,
+      "exceptions": []
+    }
+  },
+  {
+    "id": "evt-20260813-002",
+    "title": "Kuliyyah Isyak: Tafsir Al-Quran",
+    "masjid_id": "masjid-an-nur",
+    "date": "2026-08-13",
+    "start_time": "20:00",
+    "end_time": "21:00",
+    "speaker_id": "speaker-faizal",
+    "category_id": "tafsir",
+    "description": "Kuliyyah harian selepas solat Isyak — tafsir surah pilihan.",
+    "status": "published",
+    "recurrence": {
+      "type": "weekly",
+      "days": [
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+        "sunday"
+      ],
+      "start_date": "2026-08-13",
+      "end_date": null,
+      "exceptions": []
+    }
+  },
+  {
+    "id": "evt-20260813-003",
+    "title": "Kuliyyah Isyak: Fiqh Harian",
+    "masjid_id": "masjid-ar-rahmah",
+    "date": "2026-08-13",
+    "start_time": "20:00",
+    "end_time": "21:00",
+    "speaker_id": "speaker-hafiz",
+    "category_id": "fiqh",
+    "description": "Kuliyyah harian selepas solat Isyak — fiqh ibadah seharian.",
+    "status": "published",
+    "recurrence": {
+      "type": "weekly",
+      "days": [
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+        "sunday"
+      ],
+      "start_date": "2026-08-13",
+      "end_date": null,
+      "exceptions": []
+    }
+  },
+  {
+    "id": "evt-20260813-004",
+    "title": "Kuliyyah Isyak: Akidah Ahlus Sunnah",
+    "masjid_id": "masjid-al-hidayah",
+    "date": "2026-08-13",
+    "start_time": "20:00",
+    "end_time": "21:00",
+    "speaker_id": "speaker-roslan",
+    "category_id": "akidah",
+    "description": "Kuliyyah harian selepas solat Isyak — asas akidah.",
+    "status": "published",
+    "recurrence": {
+      "type": "weekly",
+      "days": [
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+        "sunday"
+      ],
+      "start_date": "2026-08-13",
+      "end_date": null,
+      "exceptions": []
+    }
+  },
+  {
+    "id": "evt-20260813-005",
+    "title": "Kuliyyah Isyak: Hadith 40",
+    "masjid_id": "masjid-al-ikhlas",
+    "date": "2026-08-13",
+    "start_time": "20:00",
+    "end_time": "21:00",
+    "speaker_id": "speaker-firdaus",
+    "category_id": "hadith",
+    "description": "Kuliyyah harian selepas solat Isyak — ulasan Hadith 40.",
+    "status": "published",
+    "recurrence": {
+      "type": "weekly",
+      "days": [
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+        "sunday"
+      ],
+      "start_date": "2026-08-13",
+      "end_date": null,
+      "exceptions": []
+    }
+  },
+  {
+    "id": "evt-20260819-001",
+    "title": "Kuliyyah Pagi Rabu: Keutamaan Ilmu",
+    "masjid_id": "masjid-alwi",
+    "date": "2026-08-19",
+    "start_time": "10:00",
+    "end_time": "11:00",
+    "speaker_id": "speaker-siti",
+    "category_id": "kuliyyah",
+    "description": "Kelas pagi Rabu (10 pagi) — keutamaan menuntut ilmu.",
+    "status": "published",
+    "recurrence": {
+      "type": "weekly",
+      "days": [
+        "wednesday"
+      ],
+      "start_date": "2026-08-19",
+      "end_date": null,
+      "exceptions": []
+    }
+  },
+  {
+    "id": "evt-20260819-002",
+    "title": "Kuliyyah Pagi Rabu: Tazkirah Wanita",
+    "masjid_id": "masjid-an-nur",
+    "date": "2026-08-19",
+    "start_time": "10:00",
+    "end_time": "11:00",
+    "speaker_id": "speaker-nur",
+    "category_id": "tazkirah",
+    "description": "Kelas pagi Rabu (10 pagi) — tazkirah untuk kaum ibu.",
+    "status": "published",
+    "recurrence": {
+      "type": "weekly",
+      "days": [
+        "wednesday"
+      ],
+      "start_date": "2026-08-19",
+      "end_date": null,
+      "exceptions": []
+    }
+  },
+  {
+    "id": "evt-20260819-003",
+    "title": "Kuliyyah Pagi Rabu: Tafsir Juz 'Amma",
+    "masjid_id": "masjid-ar-rahmah",
+    "date": "2026-08-19",
+    "start_time": "10:00",
+    "end_time": "11:00",
+    "speaker_id": "speaker-amirul",
+    "category_id": "tafsir",
+    "description": "Kelas pagi Rabu (10 pagi) — tafsir Juz 'Amma.",
+    "status": "published",
+    "recurrence": {
+      "type": "weekly",
+      "days": [
+        "wednesday"
+      ],
+      "start_date": "2026-08-19",
+      "end_date": null,
+      "exceptions": []
+    }
+  },
+  {
+    "id": "evt-20260819-004",
+    "title": "Kuliyyah Pagi Rabu: Tajwid & Bacaan",
+    "masjid_id": "masjid-al-hidayah",
+    "date": "2026-08-19",
+    "start_time": "10:00",
+    "end_time": "11:00",
+    "speaker_id": "speaker-siti",
+    "category_id": "ceramah",
+    "description": "Kelas pagi Rabu (10 pagi) — praktikal tajwid.",
+    "status": "published",
+    "recurrence": {
+      "type": "weekly",
+      "days": [
+        "wednesday"
+      ],
+      "start_date": "2026-08-19",
+      "end_date": null,
+      "exceptions": []
+    }
+  },
+  {
+    "id": "evt-20260819-005",
+    "title": "Kuliyyah Pagi Rabu: Motivasi Remaja",
+    "masjid_id": "masjid-al-ikhlas",
+    "date": "2026-08-19",
+    "start_time": "10:00",
+    "end_time": "11:00",
+    "speaker_id": "speaker-nur",
+    "category_id": "ceramah",
+    "description": "Kelas pagi Rabu (10 pagi) — motivasi untuk remaja.",
+    "status": "published",
+    "recurrence": {
+      "type": "weekly",
+      "days": [
+        "wednesday"
+      ],
+      "start_date": "2026-08-19",
+      "end_date": null,
+      "exceptions": []
+    }
   }
 ]

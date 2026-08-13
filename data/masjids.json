@@ -34,5 +34,29 @@
     "longitude": 100.2143,
     "contact": "",
     "website": ""
+  },
+  {
+    "id": "masjid-al-hidayah",
+    "name": "Masjid Al-Hidayah",
+    "mukim": "Padang Besar",
+    "mukim_id": "padang-besar",
+    "state": "Perlis",
+    "address": "Jalan Besar, 02100 Padang Besar, Perlis",
+    "latitude": 6.6628,
+    "longitude": 100.2101,
+    "contact": "",
+    "website": ""
+  },
+  {
+    "id": "masjid-al-ikhlas",
+    "name": "Masjid Al-Ikhlas",
+    "mukim": "Beseri",
+    "mukim_id": "beseri",
+    "state": "Perlis",
+    "address": "Kampung Bongor Kudong, 02400 Beseri, Perlis",
+    "latitude": 6.545,
+    "longitude": 100.1845,
+    "contact": "",
+    "website": ""
   }
 ]

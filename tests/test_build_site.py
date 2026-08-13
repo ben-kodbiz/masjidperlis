@@ -143,10 +143,13 @@ def test_recurring_exception_respected():
     rec = next(e for e in events if e["id"] == "evt-20260812-001")
     assert rec["recurrence"]["exceptions"] == ["2026-08-19"]
 
-    # 2026-08-19 is the exception; it must NOT appear in the masjid page list
+    # 2026-08-19 is the exception for evt-20260812-001; that event must NOT
+    # appear on that date — even though other events (the daily + Wednesday
+    # mock classes) legitimately occur on 19 Ogos.
     html = (out / "masjid" / "masjid-alwi" / "index.html").read_text(encoding="utf-8")
     assert "Khamis 20 Ogos 2026" in html or "Rabu 26 Ogos 2026" in html
-    assert "19 Ogos" not in html
+    assert "Rabu 19 Ogos 2026" in html  # daily/Wednesday mock classes still occur
+    assert '<span class="when">Rabu 19 Ogos 2026</span><span class="title">Kuliyyah Maghrib: Keutamaan Ilmu</span>' not in html
 
 
 def test_sitemap_and_robots():
@@ -161,7 +164,7 @@ def test_sitemap_and_robots():
     assert "https://example.com/masjids.html" in sitemap
     assert "https://example.com/event/evt-20260809-001/" in sitemap
     assert "https://example.com/masjid/masjid-alwi/" in sitemap
-    assert sitemap.count("<url>") == 3 + 8 + 3, sitemap.count("<url>")
+    assert sitemap.count("<url>") == 3 + 18 + 5, sitemap.count("<url>")  # 3 top pages + 18 events + 5 masjids
 
     robots = (out / "robots.txt").read_text(encoding="utf-8")
     assert "User-agent: *" in robots

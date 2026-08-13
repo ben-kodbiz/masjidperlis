@@ -1763,3 +1763,34 @@ Known issues:
   - None.
 Next stage: none required. Future ideas are intentionally deferred.
 ```
+
+---
+
+# Session Report — 2026-08-11 (28) — Mock data: 5 masjids + recurring classes
+
+```text
+Current stage: post-MVP demo data expansion.
+Completed:
+  - 5 masjids total (added masjid-al-hidayah in Padang Besar and
+    masjid-al-ikhlas in Beseri to the existing 3).
+  - 5 fictional speakers added (Ustaz Amirul Hafiz, Ustazah Nur Aisyah,
+    Ustaz Haji Roslan, Dr. Muhammad Faizal, Ustaz Firdaus Zulkifli).
+  - 10 recurring events (2 per masjid), all "weekly":
+      * "Kuliyyah Isyak" 20:00-21:00 every day (Mon-Sun), from 2026-08-13.
+      * "Kuliyyah Pagi Rabu" 10:00-11:00 every Wednesday, from 2026-08-19.
+    Fictional Malay titles/descriptions, varied categories and speakers.
+  - Mirrored into public/data/*.json.
+  - tests/test_build_site.py updated for the new dataset: sitemap counts
+    3+18+5, and the recurrence-exception check now asserts the excepted
+    event (evt-20260812-001) is absent on its exception date specifically
+    (other mock classes legitimately occur on 19 Ogos).
+Tests:
+  - validate OK; build_site 13/14 (only the pre-existing unrelated
+    test_no_site_url_falls_back_to_root_relative failure); security audit CLEAN.
+Files changed:
+  - data/{masjids,speakers,events}.json + public/data mirrors,
+    tests/test_build_site.py, TODO_AGENT.md.
+Known issues:
+  - Demo events/dates are fictional; replace with real data before public launch.
+Next stage: none required. Future ideas are intentionally deferred.
+```

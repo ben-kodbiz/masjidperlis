@@ -13,5 +13,30 @@
     "id": "speaker-hafiz",
     "name": "Dr. Hafiz Rahman",
     "description": "Pensyarah, Universiti Malaysia Perlis"
+  },
+  {
+    "id": "speaker-amirul",
+    "name": "Ustaz Amirul Hafiz",
+    "description": "Penceramah bebas, Perlis"
+  },
+  {
+    "id": "speaker-nur",
+    "name": "Ustazah Nur Aisyah",
+    "description": "Pengajar kelas wanita, Kangar"
+  },
+  {
+    "id": "speaker-roslan",
+    "name": "Ustaz Haji Roslan",
+    "description": "Imam Masjid Al-Hidayah, Padang Besar"
+  },
+  {
+    "id": "speaker-faizal",
+    "name": "Dr. Muhammad Faizal",
+    "description": "Pensyarah, Kolej Universiti Islam Perlis"
+  },
+  {
+    "id": "speaker-firdaus",
+    "name": "Ustaz Firdaus Zulkifli",
+    "description": "Guru Madrasah, Beseri"
   }
 ]
